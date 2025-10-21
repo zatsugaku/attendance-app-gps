@@ -372,17 +372,19 @@
                     <table class="records-table">
                         <thead>
                             <tr>
-                                <th>日時</th>
+                                <th>日付</th>
                                 <th>従業員</th>
-                                <th>種別</th>
-                                <th>位置情報</th>
+                                <th>出勤時刻</th>
+                                <th>退勤時刻</th>
                                 <th>勤務時間</th>
+                                <th>出勤位置</th>
+                                <th>退勤位置</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="recordsTableBody">
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                                <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
                                     読み込み中...
                                 </td>
                             </tr>
@@ -608,71 +610,94 @@
             });
         }
 
-        // 記録を表示
+        // 記録を表示（スタッフごとにグルーピング）
         function displayRecords(records) {
             const tbody = document.getElementById('recordsTableBody');
 
             if (records.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">記録がありません</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #999;">記録がありません</td></tr>';
                 return;
             }
 
-            const recordsWithDuration = [];
-            for (let i = 0; i < records.length; i++) {
-                const record = records[i];
-                let duration = null;
-                
-                if (record.type === 'clock_out') {
-                    for (let j = i + 1; j < records.length; j++) {
-                        const prevRecord = records[j];
-                        if (prevRecord.type === 'clock_in' && 
-                            prevRecord.userId === record.userId) {
-                            const endTime = record.timestamp.toDate();
-                            const startTime = prevRecord.timestamp.toDate();
-                            const diff = endTime - startTime;
-                            const hours = Math.floor(diff / (1000 * 60 * 60));
-                            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                            duration = `${hours}時間${minutes}分`;
-                            break;
-                        }
-                    }
-                }
-                
-                recordsWithDuration.push({ ...record, duration });
-            }
+            // スタッフ・日付ごとにグルーピング
+            const grouped = {};
 
-            tbody.innerHTML = recordsWithDuration.map(record => {
+            records.forEach(record => {
                 const timestamp = record.timestamp.toDate();
-                const date = timestamp.toLocaleDateString('ja-JP', {
-                    month: '2-digit',
-                    day: '2-digit'
-                });
-                const time = timestamp.toLocaleTimeString('ja-JP', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                const typeClass = record.type === 'clock_in' ? 'clock-in' : 'clock-out';
-                const typeText = record.type === 'clock_in' ? '出勤' : '退社';
-                const location = record.address || 
-                    (record.location ? 
-                        `緯度: ${record.location.latitude.toFixed(6)}, 経度: ${record.location.longitude.toFixed(6)}` : 
-                        '位置情報なし');
+                const dateKey = timestamp.toLocaleDateString('ja-JP');
+                const userKey = record.userName || '不明';
+                const key = `${dateKey}_${userKey}`;
+
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        date: dateKey,
+                        userName: userKey,
+                        userId: record.userId,
+                        clockIn: null,
+                        clockOut: null
+                    };
+                }
+
+                if (record.type === 'clock_in') {
+                    grouped[key].clockIn = record;
+                } else if (record.type === 'clock_out') {
+                    grouped[key].clockOut = record;
+                }
+            });
+
+            // テーブル行を生成
+            const rows = Object.values(grouped).map(group => {
+                const clockInTime = group.clockIn ?
+                    group.clockIn.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
+                    '-';
+
+                const clockOutTime = group.clockOut ?
+                    group.clockOut.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
+                    '<span style="color: #667eea; font-weight: bold;">勤務中</span>';
+
+                let duration = '-';
+                if (group.clockIn && group.clockOut) {
+                    const diff = group.clockOut.timestamp.toDate() - group.clockIn.timestamp.toDate();
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    duration = `<span class="duration-badge">${hours}時間${minutes}分</span>`;
+                }
+
+                const clockInLocation = group.clockIn ?
+                    (group.clockIn.address ||
+                     (group.clockIn.location ? `${group.clockIn.location.latitude.toFixed(4)}, ${group.clockIn.location.longitude.toFixed(4)}` : '位置情報なし')) :
+                    '-';
+
+                const clockOutLocation = group.clockOut ?
+                    (group.clockOut.address ||
+                     (group.clockOut.location ? `${group.clockOut.location.latitude.toFixed(4)}, ${group.clockOut.location.longitude.toFixed(4)}` : '位置情報なし')) :
+                    '-';
+
+                const deleteButtons = [];
+                if (group.clockIn) {
+                    deleteButtons.push(`<button class="button button-danger button-small" onclick="deleteRecord('${group.clockIn.id}', '${group.userName}', '出勤', '${group.date} ${clockInTime}')" style="margin-bottom: 5px;">出勤削除</button>`);
+                }
+                if (group.clockOut) {
+                    deleteButtons.push(`<button class="button button-danger button-small" onclick="deleteRecord('${group.clockOut.id}', '${group.userName}', '退勤', '${group.date} ${clockOutTime}')" >退勤削除</button>`);
+                }
 
                 return `
                     <tr>
-                        <td>${date}<br>${time}</td>
-                        <td>${record.userName || '不明'}</td>
-                        <td><span class="type-badge ${typeClass}">${typeText}</span></td>
-                        <td style="font-size: 12px;">${location}</td>
-                        <td>${record.duration ? `<span class="duration-badge">${record.duration}</span>` : '-'}</td>
-                        <td>
-                            <button class="button button-danger button-small" onclick="deleteRecord('${record.id}', '${record.userName}', '${typeText}', '${date} ${time}')">
-                                削除
-                            </button>
+                        <td>${group.date}</td>
+                        <td>${group.userName}</td>
+                        <td>${clockInTime}</td>
+                        <td>${clockOutTime}</td>
+                        <td>${duration}</td>
+                        <td style="font-size: 11px;">${clockInLocation}</td>
+                        <td style="font-size: 11px;">${clockOutLocation}</td>
+                        <td style="min-width: 80px;">
+                            ${deleteButtons.join('<br>')}
                         </td>
                     </tr>
                 `;
-            }).join('');
+            });
+
+            tbody.innerHTML = rows.join('');
         }
 
         // 記録を削除
@@ -757,37 +782,77 @@
             loadAllRecords();
         };
 
-        // CSV出力
+        // CSV出力（新形式: スタッフごとに1行）
         window.exportToCSV = function() {
             if (allRecords.length === 0) {
                 alert('エクスポートする記録がありません');
                 return;
             }
 
-            let csv = '日付,時刻,従業員名,種別,緯度,経度,精度,住所\n';
+            // スタッフ・日付ごとにグルーピング
+            const grouped = {};
 
             allRecords.forEach(record => {
                 const timestamp = record.timestamp.toDate();
-                const date = timestamp.toLocaleDateString('ja-JP');
-                const time = timestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-                const type = record.type === 'clock_in' ? '出勤' : '退社';
-                
-                csv += `${date},${time},${record.userName},${type},`;
-                csv += `${record.location ? record.location.latitude : ''},`;
-                csv += `${record.location ? record.location.longitude : ''},`;
-                csv += `${record.location ? record.location.accuracy : ''},`;
-                csv += `"${record.address || ''}"\n`;
+                const dateKey = timestamp.toLocaleDateString('ja-JP');
+                const userKey = record.userName || '不明';
+                const key = `${dateKey}_${userKey}`;
+
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        date: dateKey,
+                        userName: userKey,
+                        clockIn: null,
+                        clockOut: null
+                    };
+                }
+
+                if (record.type === 'clock_in') {
+                    grouped[key].clockIn = record;
+                } else if (record.type === 'clock_out') {
+                    grouped[key].clockOut = record;
+                }
+            });
+
+            let csv = '日付,従業員名,出勤時刻,退勤時刻,勤務時間,出勤位置,退勤位置\n';
+
+            Object.values(grouped).forEach(group => {
+                const clockInTime = group.clockIn ?
+                    group.clockIn.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
+                    '';
+
+                const clockOutTime = group.clockOut ?
+                    group.clockOut.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
+                    '勤務中';
+
+                let duration = '';
+                if (group.clockIn && group.clockOut) {
+                    const diff = group.clockOut.timestamp.toDate() - group.clockIn.timestamp.toDate();
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    duration = `${hours}時間${minutes}分`;
+                }
+
+                const clockInLocation = group.clockIn ?
+                    (group.clockIn.address || '位置情報なし') :
+                    '';
+
+                const clockOutLocation = group.clockOut ?
+                    (group.clockOut.address || '位置情報なし') :
+                    '';
+
+                csv += `${group.date},${group.userName},${clockInTime},${clockOutTime},${duration},"${clockInLocation}","${clockOutLocation}"\n`;
             });
 
             const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
             const blob = new Blob([bom, csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
-            
+
             link.setAttribute('href', url);
             link.setAttribute('download', `タイムカード_${new Date().toISOString().split('T')[0]}.csv`);
             link.style.visibility = 'hidden';
-            
+
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
