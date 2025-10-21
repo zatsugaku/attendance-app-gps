@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS勤怠管理アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .user-info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .status-display {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .status-display h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .status-display .status-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .status-display .job-info {
+            color: #555;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .status-display .time-info {
+            color: #333;
+            font-size: 16px;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        .status-display .elapsed-time {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 10px;
+        }
+
+        .button {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .button-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .button-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .button-complete {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .button-complete:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4);
+        }
+
+        .button-logout {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .button-logout:hover {
+            background: #e0e0e0;
+        }
+
+        .location-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .location-info strong {
+            color: #333;
+        }
+
+        .history {
+            margin-top: 30px;
+        }
+
+        .history h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        .history-group {
+            margin-bottom: 25px;
+        }
+
+        .history-date {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            margin-bottom: 15px;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .history-item.complete {
+            border-left-color: #f5576c;
+        }
+
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .history-item-type {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .history-item-type.start {
+            color: #667eea;
+        }
+
+        .history-item-type.complete {
+            color: #f5576c;
+        }
+
+        .history-item-time {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .history-item-job {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .history-item-job strong {
+            color: #333;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .history-item-address {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .work-duration {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .button {
+                font-size: 16px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🎯 GPS勤怠管理</h1>
+            <div class="user-info">
+                <div id="userName"></div>
+            </div>
+
+            <!-- 件名入力欄 -->
+            <div id="jobInputSection">
+                <div class="input-group">
+                    <label for="jobNumber">件名№</label>
+                    <input type="text" id="jobNumber" placeholder="例: 12345">
+                </div>
+                <div class="input-group">
+                    <label for="jobName">件名</label>
+                    <input type="text" id="jobName" placeholder="例: 田中様宅リフォーム工事">
+                </div>
+            </div>
+
+            <!-- ステータス表示 -->
+            <div class="status-display">
+                <h3>現在のステータス</h3>
+                <div class="status-text" id="statusText">移動中</div>
+                <div class="job-info" id="currentJobInfo"></div>
+                <div class="time-info" id="startTimeInfo"></div>
+                <div class="elapsed-time" id="elapsedTime"></div>
+            </div>
+
+            <!-- 打刻ボタン -->
+            <button id="startButton" class="button button-start" onclick="recordStart()">
+                📍 業務開始
+            </button>
+            <button id="completeButton" class="button button-complete" onclick="recordComplete()" style="display: none;">
+                ✅業務完了
+            </button>
+            
+            <button class="button button-logout" onclick="logout()">ログアウト</button>
+
+            <!-- 位置情報表示 -->
+            <div class="location-info" id="locationInfo" style="display: none;"></div>
+        </div>
+
+        <!-- 履歴表示 -->
+        <div class="card history">
+            <h2>📊 勤怠履歴</h2>
+            <div id="historyList" class="loading">読み込み中...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getFirestore, collection, addDoc, query, where, orderBy, getDocs, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds",
+            authDomain: "attendance-app-gps.firebaseapp.com",
+            projectId: "attendance-app-gps",
+            storageBucket: "attendance-app-gps.firebasestorage.app",
+            messagingSenderId: "389712797536",
+            appId: "1:389712797536:web:f872695e0a877fb8900805",
+            measurementId: "G-ELGT30EGBF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let currentStatus = 'moving';
+        let startTime = null;
+        let currentJobNumber = '';
+        let currentJobName = '';
+        let elapsedTimeInterval = null;
+
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyDw4jTRfCDTidsUfd0ewoDPd908Pg_zk38';
+
+        window.logout = async function() {
+            await signOut(auth);
+            location.reload();
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('userName').textContent = user.displayName || user.email;
+                await loadUserStatus();
+                await loadHistory();
+            } else {
+                await signInWithPopup(auth, provider);
+            }
+        });
+
+        async function loadUserStatus() {
+            const userDoc = doc(db, 'users', currentUser.uid);
+            const userSnap = await getDoc(userDoc);
+            
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                currentStatus = userData.status || 'moving';
+                startTime = userData.startTime || null;
+                currentJobNumber = userData.jobNumber || '';
+                currentJobName = userData.jobName || '';
+                
+                updateUI();
+                
+                if (currentStatus === 'working') {
+                    startElapsedTimeCounter();
+                }
+            }
+        }
+
+        function updateUI() {
+            const startButton = document.getElementById('startButton');
+            const completeButton = document.getElementById('completeButton');
+            const statusText = document.getElementById('statusText');
+            const jobInputSection = document.getElementById('jobInputSection');
+            const currentJobInfo = document.getElementById('currentJobInfo');
+            const startTimeInfo = document.getElementById('startTimeInfo');
+            const jobNumberInput = document.getElementById('jobNumber');
+            const jobNameInput = document.getElementById('jobName');
+
+            if (currentStatus === 'working') {
+                startButton.style.display = 'none';
+                completeButton.style.display = 'block';
+                jobInputSection.style.display = 'block';
+                statusText.textContent = '業務中';
+                currentJobInfo.innerHTML = `<strong>件名№:</strong> ${currentJobNumber}<br><strong>件名:</strong> ${currentJobName}`;
+                
+                if (startTime) {
+                    const startDate = new Date(startTime);
+                    startTimeInfo.textContent = `開始時刻: ${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
+                }
+            } else {
+                startButton.style.display = 'block';
+                completeButton.style.display = 'none';
+                jobInputSection.style.display = 'block';
+                statusText.textContent = '移動中';
+                currentJobInfo.innerHTML = '';
+                startTimeInfo.textContent = '';
+                document.getElementById('elapsedTime').textContent = '';
+                jobNumberInput.value = '';
+                jobNameInput.value = '';
+            }
+        }
+
+        function startElapsedTimeCounter() {
+            if (elapsedTimeInterval) {
+                clearInterval(elapsedTimeInterval);
+            }
+
+            elapsedTimeInterval = setInterval(() => {
+                if (startTime) {
+                    const now = new Date();
+                    const start = new Date(startTime);
+                    const diff = now - start;
+                    
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    
+                    document.getElementById('elapsedTime').textContent = 
+                        `${hours}時間${minutes.toString().padStart(2, '0')}分`;
+                }
+            }, 1000);
+        }
+
+        async function getAddressFromCoords(latitude, longitude) {
+            try {
+                const response = await fetch(
+                    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}&language=ja`
+                );
+                const data = await response.json();
+                
+                if (data.status === 'OK' && data.results[0]) {
+                    return data.results[0].formatted_address;
+                }
+                return '住所を取得できませんでした';
+            } catch (error) {
+                console.error('住所取得エラー:', error);
+                return '住所取得エラー';
+            }
+        }
+
+        window.recordStart = async function() {
+            const jobNumber = document.getElementById('jobNumber').value.trim();
+            const jobName = document.getElementById('jobName').value.trim();
+
+            if (!jobNumber || !jobName) {
+                alert('件名№と件名を入力してください');
+                return;
+            }
+
+            const button = document.getElementById('startButton');
+            button.disabled = true;
+            button.textContent = '位置情報取得中...';
+
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
+                });
+
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                button.textContent = '住所変換中...';
+                const address = await getAddressFromCoords(latitude, longitude);
+
+                const now = new Date();
+                await addDoc(collection(db, 'attendance'), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email,
+                    type: 'start',
+                    jobNumber: jobNumber,
+                    jobName: jobName,
+                    timestamp: now,
+                    location: { latitude, longitude, accuracy },
+                    address: address,
+                    date: now.toISOString().split('T')[0]
+                });
+
+                currentStatus = 'working';
+                startTime = now.toISOString();
+                currentJobNumber = jobNumber;
+                currentJobName = jobName;
+
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email,
+                    email: currentUser.email,
+                    status: currentStatus,
+                    startTime: startTime,
+                    jobNumber: jobNumber,
+                    jobName: jobName,
+                    lastUpdated: now
+                });
+
+                updateUI();
+                startElapsedTimeCounter();
+                await loadHistory();
+
+                alert('業務開始を記録しました！');
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('位置情報の取得に失敗しました。GPS設定を確認してください。');
+                button.disabled = false;
+                button.textContent = '📍 業務開始';
+            }
+        };
+
+        window.recordComplete = async function() {
+            const button = document.getElementById('completeButton');
+            button.disabled = true;
+            button.textContent = '位置情報取得中...';
+
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
+                });
+
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                button.textContent = '住所変換中...';
+                const address = await getAddressFromCoords(latitude, longitude);
+
+                const now = new Date();
+                await addDoc(collection(db, 'attendance'), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email,
+                    type: 'complete',
+                    jobNumber: currentJobNumber,
+                    jobName: currentJobName,
+                    timestamp: now,
+                    location: { latitude, longitude, accuracy },
+                    address: address,
+                    date: now.toISOString().split('T')[0]
+                });
+
+                if (startTime) {
+                    const start = new Date(startTime);
+                    const diff = now - start;
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    alert(`業務完了を記録しました！\n作業時間: ${hours}時間${minutes}分`);
+                }
+
+                if (elapsedTimeInterval) {
+                    clearInterval(elapsedTimeInterval);
+                }
+
+                currentStatus = 'moving';
+                startTime = null;
+                currentJobNumber = '';
+                currentJobName = '';
+
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email,
+                    email: currentUser.email,
+                    status: currentStatus,
+                    startTime: null,
+                    jobNumber: '',
+                    jobName: '',
+                    lastUpdated: now
+                });
+
+                updateUI();
+                await loadHistory();
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('位置情報の取得に失敗しました。GPS設定を確認してください。');
+                button.disabled = false;
+                button.textContent = '✅ 業務完了';
+            }
+        };
+
+        async function loadHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '<div class="loading">読み込み中...</div>';
+
+            try {
+                const q = query(
+                    collection(db, 'attendance'),
+                    where('userId', '==', currentUser.uid),
+                    orderBy('timestamp', 'desc')
+                );
+
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    historyList.innerHTML = '<p style="text-align: center; color: #999;">まだ記録がありません</p>';
+                    return;
+                }
+
+                const recordsByDate = {};
+                const records = [];
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    records.push(data);
+                    const date = data.date || data.timestamp.toDate().toISOString().split('T')[0];
+                    if (!recordsByDate[date]) {
+                        recordsByDate[date] = [];
+                    }
+                    recordsByDate[date].push(data);
+                });
+
+                let html = '';
+                const sortedDates = Object.keys(recordsByDate).sort((a, b) => b.localeCompare(a));
+
+                sortedDates.forEach(date => {
+                    const dateObj = new Date(date + 'T00:00:00');
+                    const formattedDate = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
+                    
+                    html += `<div class="history-group">`;
+                    html += `<div class="history-date">${formattedDate}</div>`;
+
+                    const dayRecords = recordsByDate[date].sort((a, b) => {
+                        const timeA = a.timestamp.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+                        const timeB = b.timestamp.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+                        return timeB - timeA;
+                    });
+
+                    for (let i = 0; i < dayRecords.length; i++) {
+                        const record = dayRecords[i];
+                        const timestamp = record.timestamp.toDate ? record.timestamp.toDate() : new Date(record.timestamp);
+                        const timeStr = `${timestamp.getHours().toString().padStart(2, '0')}:${timestamp.getMinutes().toString().padStart(2, '0')}`;
+                        
+                        const typeText = record.type === 'start' ? '📍 業務開始' : '✅ 業務完了';
+                        const typeClass = record.type === 'start' ? 'start' : 'complete';
+                        
+                        html += `<div class="history-item ${typeClass}">`;
+                        html += `<div class="history-item-header">`;
+                        html += `<span class="history-item-type ${typeClass}">${typeText}</span>`;
+                        html += `<span class="history-item-time">${timeStr}</span>`;
+                        html += `</div>`;
+                        
+                        html += `<div class="history-item-job">`;
+                        html += `<strong>件名№:</strong> ${record.jobNumber || '-'}<br>`;
+                        html += `<strong>件名:</strong> ${record.jobName || '-'}`;
+                        html += `</div>`;
+                        
+                        html += `<div class="history-item-address">📍 ${record.address || '住所情報なし'}</div>`;
+
+                        if (record.type === 'complete' && i + 1 < dayRecords.length) {
+                            const nextRecord = dayRecords[i + 1];
+                            if (nextRecord.type === 'start' && 
+                                nextRecord.jobNumber === record.jobNumber) {
+                                const endTime = timestamp;
+                                const startTimeCalc = nextRecord.timestamp.toDate ? nextRecord.timestamp.toDate() : new Date(nextRecord.timestamp);
+                                const diff = endTime - startTimeCalc;
+                                const hours = Math.floor(diff / (1000 * 60 * 60));
+                                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                
+                                html += `<div class="work-duration">📊 作業時間: ${hours}時間${minutes}分</div>`;
+                            }
+                        }
+                        
+                        html += `</div>`;
+                    }
+
+                    html += `</div>`;
+                });
+
+                historyList.innerHTML = html;
+            } catch (error) {
+                console.error('履歴読み込みエラー:', error);
+                historyList.innerHTML = '<p style="text-align: center; color: #f44336;">履歴の読み込みに失敗しました</p>';
+            }
+        }
+    </script>
+</body>
+</html>

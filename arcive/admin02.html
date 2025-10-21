@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者画面 - GPS勤怠管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .user-info {
+            color: #666;
+            font-size: 14px;
+        }
+        .logout-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .logout-btn:hover {
+            background: #ff5252;
+        }
+        
+        /* 管理者管理セクション */
+        .admin-management {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .admin-management h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        .admin-list {
+            margin-bottom: 20px;
+        }
+        .admin-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .admin-email {
+            font-weight: 500;
+            color: #333;
+        }
+        .admin-role {
+            font-size: 12px;
+            color: #667eea;
+            background: #e8eaf6;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .delete-admin-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .delete-admin-btn:hover {
+            background: #ff5252;
+        }
+        .delete-admin-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .add-admin-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .add-admin-input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .add-admin-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .add-admin-btn:hover {
+            background: #5568d3;
+        }
+        
+        /* 勤怠記録セクション */
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .date-filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .date-filter label {
+            font-weight: 500;
+            color: #333;
+        }
+        .date-filter input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .filter-btn, .export-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .filter-btn:hover, .export-btn:hover {
+            background: #5568d3;
+        }
+        .stats {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .records {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .records h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        .record-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .record-user {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+        .record-type {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .type-start {
+            background: #4caf50;
+            color: white;
+        }
+        .type-complete {
+            background: #2196f3;
+            color: white;
+        }
+        .record-time {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .record-address {
+            color: #888;
+            font-size: 13px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .no-access {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .no-access h2 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+        .no-access p {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 管理者画面</h1>
+            <div class="user-info">
+                ログイン中: <span id="userEmail">読み込み中...</span>
+            </div>
+            <button class="logout-btn" onclick="logout()">ログアウト</button>
+        </div>
+
+        <div id="noAccessMessage" class="no-access" style="display: none;">
+            <h2>🚫 アクセス権限がありません</h2>
+            <p>この画面は管理者のみアクセス可能です。</p>
+            <button class="logout-btn" onclick="logout()" style="margin-top: 20px;">ログアウト</button>
+        </div>
+
+        <div id="adminContent" style="display: none;">
+            <!-- 管理者管理セクション -->
+            <div class="admin-management">
+                <h2>👥 管理者管理</h2>
+                <div class="admin-list" id="adminList">
+                    <div class="loading">管理者一覧を読み込み中...</div>
+                </div>
+                <div class="add-admin-form">
+                    <input type="email" 
+                           id="newAdminEmail" 
+                           class="add-admin-input" 
+                           placeholder="新しい管理者のメールアドレス（例: user@example.com）">
+                    <button class="add-admin-btn" onclick="addAdmin()">管理者を追加</button>
+                </div>
+            </div>
+
+            <!-- 勤怠記録セクション -->
+            <div class="controls">
+                <div class="date-filter">
+                    <label>期間指定:</label>
+                    <input type="date" id="startDate">
+                    <label>〜</label>
+                    <input type="date" id="endDate">
+                    <button class="filter-btn" onclick="loadRecords()">絞り込み</button>
+                    <button class="export-btn" onclick="exportCSV()">CSVエクスポート</button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalEmployees">0</div>
+                    <div class="stat-label">登録従業員数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalRecords">0</div>
+                    <div class="stat-label">総記録数</div>
+                </div>
+            </div>
+
+            <div class="records">
+                <h2>勤怠記録一覧</h2>
+                <div id="recordsList">
+                    <div class="loading">記録を読み込み中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds",
+            authDomain: "attendance-app-gps.firebaseapp.com",
+            projectId: "attendance-app-gps",
+            storageBucket: "attendance-app-gps.firebasestorage.app",
+            messagingSenderId: "389712797536",
+            appId: "1:389712797536:web:f872695e0a877fb8900805",
+            measurementId: "G-ELGT30EGBF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let isAdmin = false;
+        let isSuperAdmin = false;
+
+        // 管理者チェック
+        async function checkAdminStatus(email) {
+            try {
+                const adminDoc = doc(db, 'admins', email);
+                const adminSnap = await getDoc(adminDoc);
+                
+                if (adminSnap.exists()) {
+                    const adminData = adminSnap.data();
+                    isAdmin = true;
+                    isSuperAdmin = adminData.role === 'super_admin';
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('管理者チェックエラー:', error);
+                return false;
+            }
+        }
+
+        // 認証状態監視
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('userEmail').textContent = user.email;
+                
+                // 管理者権限チェック
+                const hasAccess = await checkAdminStatus(user.email);
+                
+                if (hasAccess) {
+                    document.getElementById('adminContent').style.display = 'block';
+                    document.getElementById('noAccessMessage').style.display = 'none';
+                    loadAdmins();
+                    loadRecords();
+                } else {
+                    document.getElementById('adminContent').style.display = 'none';
+                    document.getElementById('noAccessMessage').style.display = 'block';
+                }
+            } else {
+                // 未ログインの場合はGoogle認証
+                try {
+                    await signInWithPopup(auth, provider);
+                } catch (error) {
+                    console.error('ログインエラー:', error);
+                    alert('ログインに失敗しました');
+                }
+            }
+        });
+
+        // 管理者一覧を読み込み
+        async function loadAdmins() {
+            try {
+                const adminsQuery = query(collection(db, 'admins'));
+                const adminsSnapshot = await getDocs(adminsQuery);
+                
+                const adminListDiv = document.getElementById('adminList');
+                adminListDiv.innerHTML = '';
+                
+                if (adminsSnapshot.empty) {
+                    adminListDiv.innerHTML = '<div class="loading">管理者が登録されていません</div>';
+                    return;
+                }
+                
+                adminsSnapshot.forEach((doc) => {
+                    const adminData = doc.data();
+                    const adminItem = document.createElement('div');
+                    adminItem.className = 'admin-item';
+                    
+                    const isCurrentUserSuperAdmin = isSuperAdmin;
+                    const isSuperAdminUser = adminData.role === 'super_admin';
+                    const canDelete = isCurrentUserSuperAdmin && doc.id !== currentUser.email;
+                    
+                    adminItem.innerHTML = `
+                        <div>
+                            <span class="admin-email">${doc.id}</span>
+                            ${isSuperAdminUser ? '<span class="admin-role">最高権限者</span>' : '<span class="admin-role">管理者</span>'}
+                        </div>
+                        <button class="delete-admin-btn" 
+                                onclick="deleteAdmin('${doc.id}')" 
+                                ${!canDelete ? 'disabled' : ''}>
+                            ${doc.id === currentUser.email ? '自分' : '削除'}
+                        </button>
+                    `;
+                    
+                    adminListDiv.appendChild(adminItem);
+                });
+            } catch (error) {
+                console.error('管理者一覧読み込みエラー:', error);
+                document.getElementById('adminList').innerHTML = '<div class="error">管理者一覧の読み込みに失敗しました</div>';
+            }
+        }
+
+        // 管理者を追加
+        window.addAdmin = async function() {
+            const emailInput = document.getElementById('newAdminEmail');
+            const email = emailInput.value.trim();
+            
+            if (!email) {
+                alert('メールアドレスを入力してください');
+                return;
+            }
+            
+            if (!email.includes('@')) {
+                alert('正しいメールアドレスを入力してください');
+                return;
+            }
+            
+            if (!isSuperAdmin) {
+                alert('管理者の追加権限がありません');
+                return;
+            }
+            
+            try {
+                // 既に管理者か確認
+                const adminDoc = doc(db, 'admins', email);
+                const adminSnap = await getDoc(adminDoc);
+                
+                if (adminSnap.exists()) {
+                    alert('このメールアドレスは既に管理者として登録されています');
+                    return;
+                }
+                
+                // 新しい管理者を追加
+                await setDoc(adminDoc, {
+                    email: email,
+                    role: 'admin',
+                    addedAt: new Date(),
+                    addedBy: currentUser.email
+                });
+                
+                alert(`${email} を管理者として追加しました`);
+                emailInput.value = '';
+                loadAdmins();
+            } catch (error) {
+                console.error('管理者追加エラー:', error);
+                alert('管理者の追加に失敗しました');
+            }
+        };
+
+        // 管理者を削除
+        window.deleteAdmin = async function(email) {
+            if (!isSuperAdmin) {
+                alert('管理者の削除権限がありません');
+                return;
+            }
+            
+            if (email === currentUser.email) {
+                alert('自分自身を削除することはできません');
+                return;
+            }
+            
+            if (!confirm(`${email} を管理者から削除しますか？`)) {
+                return;
+            }
+            
+            try {
+                await deleteDoc(doc(db, 'admins', email));
+                alert(`${email} を管理者から削除しました`);
+                loadAdmins();
+            } catch (error) {
+                console.error('管理者削除エラー:', error);
+                alert('管理者の削除に失敗しました');
+            }
+        };
+
+        // 勤怠記録を読み込み
+        window.loadRecords = async function() {
+            try {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                
+                let recordsQuery = query(
+                    collection(db, 'attendance'),
+                    orderBy('timestamp', 'desc')
+                );
+                
+                if (startDate && endDate) {
+                    recordsQuery = query(
+                        collection(db, 'attendance'),
+                        where('date', '>=', startDate),
+                        where('date', '<=', endDate),
+                        orderBy('date', 'desc'),
+                        orderBy('timestamp', 'desc')
+                    );
+                }
+                
+                const recordsSnapshot = await getDocs(recordsQuery);
+                const recordsListDiv = document.getElementById('recordsList');
+                
+                if (recordsSnapshot.empty) {
+                    recordsListDiv.innerHTML = '<div class="loading">記録がありません</div>';
+                    document.getElementById('totalRecords').textContent = '0';
+                    return;
+                }
+                
+                recordsListDiv.innerHTML = '';
+                const uniqueUsers = new Set();
+                
+                recordsSnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    uniqueUsers.add(data.userId);
+                    
+                    const recordDiv = document.createElement('div');
+                    recordDiv.className = 'record-item';
+                    
+                    const timestamp = data.timestamp.toDate();
+                    const timeStr = timestamp.toLocaleString('ja-JP');
+                    
+                    const typeText = data.type === 'start' ? '業務開始' : '業務完了';
+                    const typeClass = data.type === 'start' ? 'type-start' : 'type-complete';
+                    
+                    recordDiv.innerHTML = `
+                        <div class="record-header">
+                            <span class="record-user">${data.userName}</span>
+                            <span class="record-type ${typeClass}">${typeText}</span>
+                        </div>
+                        <div class="record-time">⏰ ${timeStr}</div>
+                        <div class="record-address">📍 ${data.address || '住所情報なし'}</div>
+                    `;
+                    
+                    recordsListDiv.appendChild(recordDiv);
+                });
+                
+                document.getElementById('totalEmployees').textContent = uniqueUsers.size;
+                document.getElementById('totalRecords').textContent = recordsSnapshot.size;
+                
+            } catch (error) {
+                console.error('記録読み込みエラー:', error);
+                document.getElementById('recordsList').innerHTML = '<div class="error">記録の読み込みに失敗しました</div>';
+            }
+        };
+
+        // CSVエクスポート
+        window.exportCSV = async function() {
+            try {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                
+                let recordsQuery = query(
+                    collection(db, 'attendance'),
+                    orderBy('timestamp', 'desc')
+                );
+                
+                if (startDate && endDate) {
+                    recordsQuery = query(
+                        collection(db, 'attendance'),
+                        where('date', '>=', startDate),
+                        where('date', '<=', endDate),
+                        orderBy('date', 'desc'),
+                        orderBy('timestamp', 'desc')
+                    );
+                }
+                
+                const recordsSnapshot = await getDocs(recordsQuery);
+                
+                if (recordsSnapshot.empty) {
+                    alert('エクスポートするデータがありません');
+                    return;
+                }
+                
+                let csv = '\uFEFF'; // BOM for Excel
+                csv += '日付,時刻,従業員名,種別,住所\n';
+                
+                recordsSnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const timestamp = data.timestamp.toDate();
+                    const date = timestamp.toLocaleDateString('ja-JP');
+                    const time = timestamp.toLocaleTimeString('ja-JP');
+                    const type = data.type === 'start' ? '業務開始' : '業務完了';
+                    
+                    csv += `${date},${time},${data.userName},${type},"${data.address || ''}"\n`;
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', `勤怠記録_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+            } catch (error) {
+                console.error('CSVエクスポートエラー:', error);
+                alert('CSVエクスポートに失敗しました');
+            }
+        };
+
+        // ログアウト
+        window.logout = async function() {
+            try {
+                await signOut(auth);
+                window.location.reload();
+            } catch (error) {
+                console.error('ログアウトエラー:', error);
+                alert('ログアウトに失敗しました');
+            }
+        };
+    </script>
+</body>
+</html>

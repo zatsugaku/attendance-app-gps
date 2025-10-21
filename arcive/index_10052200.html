@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPSå‹¤æ€ ç®¡ç†</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .user-info {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .status-display {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-display h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .status-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .status-display .job-info {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.8;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+
+        .status-display .time-info {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .status-display .elapsed-time {
+            font-size: 32px;
+            font-weight: bold;
+            color: #764ba2;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .button-complete {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .button-logout {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .history {
+            margin-top: 30px;
+        }
+
+        .history h2 {
+            color: #667eea;
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-group {
+            margin-bottom: 20px;
+        }
+
+        .history-date {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .history-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .history-item.complete {
+            border-left-color: #f5576c;
+        }
+
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .history-item-time {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .history-item-type {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .history-item-type.start {
+            background: #667eea;
+            color: white;
+        }
+
+        .history-item-type.complete {
+            background: #f5576c;
+            color: white;
+        }
+
+        .history-item-details {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .history-item-job {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .work-duration {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .login-section {
+            text-align: center;
+        }
+
+        .login-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+
+        #loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">èª­ã¿è¾¼ã¿ä¸­...</div>
+
+    <div id="app" style="display: none;">
+        <div class="container">
+            <div class="card">
+                <div class="header">
+                    <h1>ðŸŽ¯ GPSå‹¤æ€ ç®¡ç†</h1>
+                    <div class="user-info" id="userInfo"></div>
+                </div>
+
+                <div id="mainContent">
+                    <div id="jobInputSection">
+                        <div class="input-group">
+                            <label for="jobNumber">ä»¶åNO.</label>
+                            <input type="text" id="jobNumber" placeholder="ä¾‹: ABC123" pattern="[A-Za-z0-9]{6}" maxlength="6" title="è‹±æ•°å­—6æ–‡å­—ã§å…¥åŠ›ã—ã¦ãã ã•ã„" inputmode="latin" style="ime-mode: inactive;" oninput="this.value = this.value.replace(/[ï¼¡-ï¼ºï½-ï½šï¼-ï¼™]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="jobName">ä»¶å</label>
+                            <input type="text" id="jobName" placeholder="ä¾‹: ç"°ä¸­æ§˜å®…ãƒªãƒ•ã‚©ãƒ¼ãƒ å·¥äº‹" inputmode="text" lang="ja" required>
+                        </div>
+                    </div>
+
+                    <div class="status-display">
+                        <h3>ç¾åœ¨ã®ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹</h3>
+                        <div class="status-text" id="statusText">ç§»å‹•ä¸­</div>
+                        <div class="job-info" id="currentJobInfo"></div>
+                        <div class="time-info" id="startTimeInfo"></div>
+                        <div class="time-info" id="currentLocationInfo"></div>
+                        <div class="elapsed-time" id="elapsedTime"></div>
+                    </div>
+
+                    <button id="startButton" class="button button-start" onclick="recordStart()">
+                        ðŸ" æ¥­å‹™é–‹å§‹
+                    </button>
+
+                    <button id="completeButton" class="button button-complete" onclick="recordComplete()" style="display: none;">
+                        âœ… æ¥­å‹™å®Œäº†
+                    </button>
+
+                    <button class="button button-logout" onclick="logout()">
+                        ãƒ­ã‚°ã‚¢ã‚¦ãƒˆ
+                    </button>
+                </div>
+
+                <div class="history">
+                    <h2>ðŸ"Š å‹¤æ€ å±¥æ­´</h2>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loginSection" class="container" style="display: none;">
+        <div class="card login-section">
+            <h2>ãƒ­ã‚°ã‚¤ãƒ³ã—ã¦ãã ã•ã„</h2>
+            <button class="button button-start" onclick="loginWithGoogle()">
+                Googleã§ãƒ­ã‚°ã‚¤ãƒ³
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, query, where, orderBy, getDocs, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds",
+            authDomain: "attendance-app-gps.firebaseapp.com",
+            projectId: "attendance-app-gps",
+            storageBucket: "attendance-app-gps.firebasestorage.app",
+            messagingSenderId: "389712797536",
+            appId: "1:389712797536:web:f872695e0a877fb8900805",
+            measurementId: "G-ELGT30EGBF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let currentStatus = 'moving';
+        let startTime = null;
+        let currentJobNumber = '';
+        let currentJobName = '';
+        let elapsedTimeInterval = null;
+
+        window.loginWithGoogle = async function() {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error('ãƒ­ã‚°ã‚¤ãƒ³ã‚¨ãƒ©ãƒ¼:', error);
+                alert('ãƒ­ã‚°ã‚¤ãƒ³ã«å¤±æ•—ã—ã¾ã—ãŸ: ' + error.message);
+            }
+        };
+
+        window.logout = async function() {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error('ãƒ­ã‚°ã‚¢ã‚¦ãƒˆã‚¨ãƒ©ãƒ¼:', error);
+                alert('ãƒ­ã‚°ã‚¢ã‚¦ãƒˆã«å¤±æ•—ã—ã¾ã—ãŸ');
+            }
+        };
+
+        async function loadUserStatus() {
+            const userDoc = doc(db, 'users', currentUser.uid);
+            const userSnap = await getDoc(userDoc);
+            
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                currentStatus = userData.status || 'moving';
+                startTime = userData.startTime || null;
+                currentJobNumber = userData.jobNumber || '';
+                currentJobName = userData.jobName || '';
+                
+                updateUI();
+                
+                if (currentStatus === 'working' && startTime) {
+                    startElapsedTimeCounter();
+                }
+            }
+        }
+
+        function startElapsedTimeCounter() {
+            if (elapsedTimeInterval) {
+                clearInterval(elapsedTimeInterval);
+            }
+
+            elapsedTimeInterval = setInterval(() => {
+                if (startTime) {
+                    const now = new Date();
+                    const start = new Date(startTime);
+                    const diff = now - start;
+                    
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    
+                    document.getElementById('elapsedTime').textContent = 
+                        `${hours}æ™‚é–"${minutes.toString().padStart(2, '0')}åˆ†`;
+                }
+            }, 1000);
+        }
+
+        function updateUI() {
+            const startButton = document.getElementById('startButton');
+            const completeButton = document.getElementById('completeButton');
+            const statusText = document.getElementById('statusText');
+            const currentJobInfo = document.getElementById('currentJobInfo');
+            const startTimeInfo = document.getElementById('startTimeInfo');
+            const elapsedTimeDiv = document.getElementById('elapsedTime');
+            const jobInputSection = document.getElementById('jobInputSection');
+            const currentLocationInfo = document.getElementById('currentLocationInfo');
+
+            if (currentStatus === 'working') {
+                startButton.style.display = 'none';
+                completeButton.style.display = 'block';
+                statusText.textContent = 'æ¥­å‹™ä¸­';
+                jobInputSection.style.display = 'none';
+                
+                currentJobInfo.innerHTML = `<strong>ä»¶åâ„–:</strong> ${currentJobNumber}<br><strong>ä»¶å:</strong> ${currentJobName}`;
+                
+                if (startTime) {
+                    const startDate = new Date(startTime);
+                    startTimeInfo.textContent = `é–‹å§‹æ™‚åˆ»: ${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
+                } else {
+                    startTimeInfo.textContent = '';
+                }
+                
+                elapsedTimeDiv.style.display = 'block';
+            } else {
+                startButton.style.display = 'block';
+                completeButton.style.display = 'none';
+                statusText.textContent = 'ç§»å‹•ä¸­';
+                jobInputSection.style.display = 'block';
+                currentJobInfo.innerHTML = '';
+                startTimeInfo.textContent = '';
+                elapsedTimeDiv.style.display = 'none';
+                elapsedTimeDiv.textContent = '';
+                currentLocationInfo.textContent = '';
+            }
+        }
+
+        window.recordStart = async function() {
+            const jobNumber = document.getElementById('jobNumber').value.trim();
+            const jobName = document.getElementById('jobName').value.trim();
+
+            if (!jobNumber || !jobName) {
+                alert('ä»¶åâ„–ã¨ä»¶åã‚'å…¥åŠ›ã—ã¦ãã ã•ã„');
+                return;
+            }
+
+            // ä»¶åâ„–ã¯è‹±æ•°å­—6æ–‡å­—ã®ã¿
+            const jobNumberPattern = /^[A-Za-z0-9]{6}$/;
+            if (!jobNumberPattern.test(jobNumber)) {
+                alert('ä»¶åâ„–ã¯è‹±æ•°å­—6æ–‡å­—ã§å…¥åŠ›ã—ã¦ãã ã•ã„\nä¾‹: ABC123');
+                return;
+            }
+            
+            const button = document.getElementById('startButton');
+            button.disabled = true;
+            button.textContent = 'ä½ç½®æƒ…å ±å–å¾—ä¸­...';
+
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
+                });
+
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                button.textContent = 'ä½æ‰€å¤‰æ›ä¸­...';
+
+                let address = 'ä½æ‰€å–å¾—å¤±æ•—';
+                try {
+                    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds&language=ja`;
+                    const response = await fetch(geocodeUrl);
+                    const data = await response.json();
+
+                    if (data.status === 'OK' && data.results[0]) {
+                        address = data.results[0].formatted_address;
+                    } else {
+                        console.error('ä½æ‰€å–å¾—ã‚¨ãƒ©ãƒ¼:', data.status);
+                        address = `ä½ç½®: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                    }
+                } catch (geocodeError) {
+                    console.error('Geocoding API ã‚¨ãƒ©ãƒ¼:', geocodeError);
+                    address = `ä½ç½®: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                }
+
+                const now = new Date();
+
+                await addDoc(collection(db, 'attendance'), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email,
+                    type: 'start',
+                    jobNumber: jobNumber,
+                    jobName: jobName,
+                    timestamp: now,
+                    location: {
+                        latitude: latitude,
+                        longitude: longitude,
+                        accuracy: accuracy
+                    },
+                    address: address,
+                    date: now.toISOString().split('T')[0]
+                });
+
+                currentStatus = 'working';
+                startTime = now.toISOString();
+                currentJobNumber = jobNumber;
+                currentJobName = jobName;
+
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    userName: currentUser.displayName || currentUser.email,
+                    status: 'working',
+                    startTime: startTime,
+                    jobNumber: jobNumber,
+                    jobName: jobName,
+                    lastUpdated: now
+                }, { merge: true });
+
+                document.getElementById('jobNumber').value = '';
+                document.getElementById('jobName').value = '';
+
+                updateUI();
+                startElapsedTimeCounter();
+
+                // ä½æ‰€ã‚'ç¾åœ¨ã®ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã«è¡¨ç¤º
+                document.getElementById('currentLocationInfo').textContent = `ðŸ" ${address}`;
+
+                // å±¥æ­´ã‚'è‡ªå‹•æ›´æ–°
+                await loadHistory();
+
+                alert(`æ¥­å‹™é–‹å§‹ã‚'è¨˜éŒ²ã—ã¾ã—ãŸï¼\nä»¶å: ${jobName}\nä½ç½®: ${address}`);
+
+            } catch (error) {
+                console.error('ã‚¨ãƒ©ãƒ¼:', error);
+                alert('ä½ç½®æƒ…å ±ã®å–å¾—ã«å¤±æ•—ã—ã¾ã—ãŸã€‚GPSè¨­å®šã‚'ç¢ºèªã—ã¦ãã ã•ã„ã€‚\nã‚¨ãƒ©ãƒ¼: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = 'ðŸ" æ¥­å‹™é–‹å§‹';
+            }
+        };
+
+        window.recordComplete = async function() {
+            const button = document.getElementById('completeButton');
+            button.disabled = true;
+            button.textContent = 'ä½ç½®æƒ…å ±å–å¾—ä¸­...';
+
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
+                });
+
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                button.textContent = 'ä½æ‰€å¤‰æ›ä¸­...';
+
+                let address = 'ä½æ‰€å–å¾—å¤±æ•—';
+                try {
+                    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds&language=ja`;
+                    const response = await fetch(geocodeUrl);
+                    const data = await response.json();
+
+                    if (data.status === 'OK' && data.results[0]) {
+                        address = data.results[0].formatted_address;
+                    } else {
+                        console.error('ä½æ‰€å–å¾—ã‚¨ãƒ©ãƒ¼:', data.status);
+                        address = `ä½ç½®: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                    }
+                } catch (geocodeError) {
+                    console.error('Geocoding API ã‚¨ãƒ©ãƒ¼:', geocodeError);
+                    address = `ä½ç½®: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                }
+
+                const now = new Date();
+                
+                let workDuration = '';
+                if (startTime) {
+                    const start = new Date(startTime);
+                    const diff = now - start;
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    workDuration = `${hours}æ™‚é–"${minutes}åˆ†`;
+                }
+
+                await addDoc(collection(db, 'attendance'), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email,
+                    type: 'complete',
+                    jobNumber: currentJobNumber,
+                    jobName: currentJobName,
+                    timestamp: now,
+                    location: {
+                        latitude: latitude,
+                        longitude: longitude,
+                        accuracy: accuracy
+                    },
+                    address: address,
+                    date: now.toISOString().split('T')[0]
+                });
+
+                currentStatus = 'moving';
+                const tempJobName = currentJobName;
+                startTime = null;
+                currentJobNumber = '';
+                currentJobName = '';
+
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    userName: currentUser.displayName || currentUser.email,
+                    status: 'moving',
+                    startTime: null,
+                    jobNumber: '',
+                    jobName: '',
+                    lastUpdated: now
+                }, { merge: true });
+
+                if (elapsedTimeInterval) {
+                    clearInterval(elapsedTimeInterval);
+                }
+
+                updateUI();
+                loadHistory();
+
+                alert(`æ¥­å‹™å®Œäº†ã‚'è¨˜éŒ²ã—ã¾ã—ãŸï¼\nä»¶å: ${tempJobName}\nä½œæ¥­æ™‚é–": ${workDuration}\nä½ç½®: ${address}`);
+
+            } catch (error) {
+                console.error('ã‚¨ãƒ©ãƒ¼:', error);
+                alert('ä½ç½®æƒ…å ±ã®å–å¾—ã«å¤±æ•—ã—ã¾ã—ãŸã€‚GPSè¨­å®šã‚'ç¢ºèªã—ã¦ãã ã•ã„ã€‚\nã‚¨ãƒ©ãƒ¼: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = 'âœ… æ¥­å‹™å®Œäº†';
+            }
+        };
+
+        async function loadHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '<p style="text-align: center; color: #999;">èª­ã¿è¾¼ã¿ä¸­...</p>';
+
+            try {
+                const q = query(
+                    collection(db, 'attendance'),
+                    where('userId', '==', currentUser.uid),
+                    orderBy('timestamp', 'desc')
+                );
+
+                const querySnapshot = await getDocs(q);
+                const records = [];
+                querySnapshot.forEach((doc) => {
+                    records.push(doc.data());
+                });
+
+                if (records.length === 0) {
+                    historyList.innerHTML = '<p style="text-align: center; color: #999;">è¨˜éŒ²ãŒã‚ã‚Šã¾ã›ã‚"</p>';
+                    return;
+                }
+
+                const groupedByDate = {};
+                records.forEach(record => {
+                    const date = record.date;
+                    if (!groupedByDate[date]) {
+                        groupedByDate[date] = [];
+                    }
+                    groupedByDate[date].push(record);
+                });
+
+                let html = '';
+                for (const date in groupedByDate) {
+                    const dayRecords = groupedByDate[date];
+                    const dateObj = new Date(date);
+                    const dateStr = `${dateObj.getMonth() + 1}æœˆ${dateObj.getDate()}æ—¥`;
+
+                    html += `<div class="history-group">`;
+                    html += `<div class="history-date">${dateStr}</div>`;
+
+                    dayRecords.forEach((record, i) => {
+                        const timestamp = record.timestamp.toDate ? record.timestamp.toDate() : new Date(record.timestamp);
+                        const time = `${timestamp.getHours().toString().padStart(2, '0')}:${timestamp.getMinutes().toString().padStart(2, '0')}`;
+                        const typeClass = record.type === 'start' ? 'start' : 'complete';
+                        const typeText = record.type === 'start' ? 'æ¥­å‹™é–‹å§‹' : 'æ¥­å‹™å®Œäº†';
+
+                        html += `<div class="history-item ${typeClass}">`;
+                        html += `<div class="history-item-header">`;
+                        html += `<span class="history-item-time">${time}</span>`;
+                        html += `<span class="history-item-type ${typeClass}">${typeText}</span>`;
+                        html += `</div>`;
+
+                        if (record.jobNumber && record.jobName) {
+                            html += `<div class="history-item-job">ä»¶åâ„–: ${record.jobNumber} - ${record.jobName}</div>`;
+                        }
+
+                        html += `<div class="history-item-details">`;
+                        html += `ðŸ" ${record.address || 'ä½ç½®æƒ…å ±ãªã—'}<br>`;
+                        html += `ðŸŽ¯ ç²¾åº¦: ${record.location ? Math.round(record.location.accuracy) : 'ä¸æ˜Ž'}m`;
+                        html += `</div>`;
+
+                        if (record.type === 'complete' && i + 1 < dayRecords.length) {
+                            const nextRecord = dayRecords[i + 1];
+                            if (nextRecord.type === 'start' && nextRecord.jobNumber === record.jobNumber) {
+                                const endTime = timestamp;
+                                const startTimeCalc = nextRecord.timestamp.toDate ? nextRecord.timestamp.toDate() : new Date(nextRecord.timestamp);
+                                const diff = endTime - startTimeCalc;
+                                const hours = Math.floor(diff / (1000 * 60 * 60));
+                                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                
+                                html += `<div class="work-duration">ðŸ"Š ä½œæ¥­æ™‚é–": ${hours}æ™‚é–"${minutes}åˆ†</div>`;
+                            }
+                        }
+
+                        html += `</div>`;
+                    });
+
+                    html += `</div>`;
+                }
+
+                historyList.innerHTML = html;
+
+            } catch (error) {
+                console.error('å±¥æ­´èª­ã¿è¾¼ã¿ã‚¨ãƒ©ãƒ¼:', error);
+                historyList.innerHTML = '<p style="text-align: center; color: #f44336;">å±¥æ­´ã®èª­ã¿è¾¼ã¿ã«å¤±æ•—ã—ã¾ã—ãŸ</p>';
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            document.getElementById('loading').style.display = 'none';
+
+            if (user) {
+                currentUser = user;
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('userInfo').textContent = user.displayName || user.email;
+
+                await loadUserStatus();
+                await loadHistory();
+            } else {
+                currentUser = null;
+                document.getElementById('app').style.display = 'none';
+                document.getElementById('loginSection').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

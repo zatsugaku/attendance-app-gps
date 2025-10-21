@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS勤怠管理アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .user-info {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .main-content {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px 10px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .nav-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .nav-tab:hover {
+            background: #5a6fd8;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .status-card.working {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .status-card.break {
+            background: linear-gradient(135deg, #FF9800, #f57c00);
+            color: white;
+        }
+
+        .location-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .location-info h3 {
+            color: #1976D2;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .location-info p {
+            color: #333;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #FF9800, #f57c00);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .history-date {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .history-time {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background: #5a6268;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #f44336;
+        }
+
+        /* ログイン画面のスタイル */
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .login-card h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .google-login-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+        }
+
+        .google-login-btn:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .nav-tab {
+                font-size: 12px;
+                padding: 12px 8px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ログイン前の画面 -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <h1>🚗 GPS勤怠管理アプリ</h1>
+            <p style="margin-bottom: 30px; color: #666;">訪問業務の勤怠管理システム</p>
+            <button id="loginBtn" class="google-login-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Googleでログイン
+            </button>
+        </div>
+    </div>
+
+    <!-- ログイン後のメイン画面 -->
+    <div id="mainApp" class="container" style="display: none;">
+        <div class="header">
+            <h1>🚗 GPS勤怠管理アプリ</h1>
+            <div class="user-info">
+                ようこそ、<span id="userName">ユーザー</span>さん
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- ナビゲーションタブ -->
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showTab('attendance')">📍 勤怠</button>
+                <button class="nav-tab" onclick="showTab('history')">📋 履歴</button>
+                <button class="nav-tab" onclick="showTab('settings')">⚙️ 設定</button>
+            </div>
+
+            <!-- 勤怠タブ -->
+            <div id="attendanceTab" class="tab-content active">
+                <div class="status-card" id="statusCard">
+                    <h2>📍 現在の状態</h2>
+                    <p id="statusText">待機中</p>
+                    <p id="currentTime">--:--</p>
+                </div>
+
+                <div class="location-info" id="locationInfo" style="display: none;">
+                    <h3>📍 現在位置</h3>
+                    <p id="locationText">位置情報を取得中...</p>
+                    <p id="addressText">住所情報を取得中...</p>
+                    <p id="accuracyText">精度: --m</p>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="getLocationBtn" onclick="getCurrentLocation()">
+                        📍 位置取得
+                    </button>
+                    <button class="btn btn-success" id="startWorkBtn" onclick="startWork()" disabled>
+                        🚀 到着
+                    </button>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-warning" id="breakBtn" onclick="takeBreak()" disabled>
+                        ⏸️ 休憩
+                    </button>
+                    <button class="btn btn-danger" id="endWorkBtn" onclick="endWork()" disabled>
+                        ✅ 完了
+                    </button>
+                </div>
+            </div>
+
+            <!-- 履歴タブ -->
+            <div id="historyTab" class="tab-content">
+                <h2>📋 勤怠履歴</h2>
+                <div id="historyList">
+                    <div class="loading">履歴を読み込み中...</div>
+                </div>
+            </div>
+
+            <!-- 設定タブ -->
+            <div id="settingsTab" class="tab-content">
+                <h2>⚙️ 設定</h2>
+                <div class="status-card">
+                    <h3>👤 ユーザー情報</h3>
+                    <p>メール: <span id="userEmail">--</span></p>
+                    <p>ログイン日時: <span id="loginTime">--</span></p>
+                </div>
+                
+                <div class="status-card">
+                    <h3>📱 アプリ情報</h3>
+                    <p>バージョン: 1.0.0</p>
+                    <p>最終更新: 2025年9月27日</p>
+                </div>
+
+                <button class="logout-btn" onclick="logout()">
+                    ログアウト
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase v9 SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { getFirestore, collection, addDoc, query, orderBy, getDocs, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        // Firebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds",
+            authDomain: "attendance-app-gps.firebaseapp.com",
+            projectId: "attendance-app-gps",
+            storageBucket: "attendance-app-gps.firebasestorage.app",
+            messagingSenderId: "389712797536",
+            appId: "1:389712797536:web:f872695e0a877fb8900805",
+            measurementId: "G-ELGT30EGBF"
+        };
+
+        // Firebase初期化
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // グローバル変数
+        let currentUser = null;
+        let currentLocation = null;
+        let workStartTime = null;
+        let currentStatus = 'waiting'; // waiting, working, break
+
+        // 認証状態の監視
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                showMainApp();
+                updateUserInfo();
+                loadHistory();
+                startTimeUpdate();
+            } else {
+                showLoginScreen();
+            }
+        });
+
+        // ログイン処理
+        window.login = async function() {
+            try {
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                console.log('ログイン成功:', result.user);
+            } catch (error) {
+                console.error('ログインエラー:', error);
+                alert('ログインに失敗しました: ' + error.message);
+            }
+        };
+
+        // ログアウト処理
+        window.logout = async function() {
+            try {
+                await signOut(auth);
+                console.log('ログアウト成功');
+            } catch (error) {
+                console.error('ログアウトエラー:', error);
+            }
+        };
+
+        // 画面表示切り替え
+        function showLoginScreen() {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+        }
+
+        function showMainApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+        }
+
+        // ユーザー情報の更新
+        function updateUserInfo() {
+            if (currentUser) {
+                document.getElementById('userName').textContent = currentUser.displayName || 'ユーザー';
+                document.getElementById('userEmail').textContent = currentUser.email;
+                document.getElementById('loginTime').textContent = new Date().toLocaleString('ja-JP');
+            }
+        }
+
+        // 現在時刻の更新
+        function startTimeUpdate() {
+            setInterval(() => {
+                document.getElementById('currentTime').textContent = new Date().toLocaleTimeString('ja-JP');
+            }, 1000);
+        }
+
+        // タブ切り替え
+        window.showTab = function(tabName) {
+            // すべてのタブを非表示
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // 指定されたタブを表示
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+
+            // 履歴タブの場合は履歴を再読み込み
+            if (tabName === 'history') {
+                loadHistory();
+            }
+        };
+
+        // GPS位置取得
+        window.getCurrentLocation = function() {
+            const getLocationBtn = document.getElementById('getLocationBtn');
+            const locationInfo = document.getElementById('locationInfo');
+            
+            getLocationBtn.disabled = true;
+            getLocationBtn.textContent = '📍 取得中...';
+            
+            if (!navigator.geolocation) {
+                alert('このブラウザは位置情報機能をサポートしていません。');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    currentLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: new Date()
+                    };
+
+                    // 位置情報を表示
+                    document.getElementById('locationText').textContent = 
+                        `緯度: ${currentLocation.latitude.toFixed(6)}, 経度: ${currentLocation.longitude.toFixed(6)}`;
+                    document.getElementById('accuracyText').textContent = 
+                        `精度: ${Math.round(currentLocation.accuracy)}m`;
+
+                    // 住所情報を取得（Google Geocoding API使用想定）
+                    document.getElementById('addressText').textContent = 
+                        '住所: 位置情報取得完了（住所変換は次のステップで実装）';
+
+                    locationInfo.style.display = 'block';
+                    
+                    // 到着ボタンを有効化
+                    document.getElementById('startWorkBtn').disabled = false;
+                    
+                    getLocationBtn.disabled = false;
+                    getLocationBtn.textContent = '📍 位置取得';
+                },
+                (error) => {
+                    console.error('位置情報取得エラー:', error);
+                    let errorMessage = '位置情報の取得に失敗しました。';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = '位置情報の利用が拒否されました。ブラウザの設定を確認してください。';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = '位置情報が取得できません。';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = '位置情報の取得がタイムアウトしました。';
+                            break;
+                    }
+                    
+                    alert(errorMessage);
+                    getLocationBtn.disabled = false;
+                    getLocationBtn.textContent = '📍 位置取得';
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
+        };
+
+        // 到着
+        window.startWork = async function() {
+            if (!currentLocation) {
+                alert('先に位置情報を取得してください。');
+                return;
+            }
+
+            try {
+                workStartTime = new Date();
+                currentStatus = 'working';
+
+                // Firestoreに記録
+                await addDoc(collection(db, 'attendance'), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userEmail: currentUser.email,
+                    type: 'start',
+                    timestamp: workStartTime,
+                    location: currentLocation,
+                    status: 'working'
+                });
+
+                updateUI();
+                alert('到着を記録しました！');
+                
+            } catch (error) {
+                console.error('到着記録エラー:', error);
+                alert('到着の記録に失敗しました。');
+            }
+        };
+
+        // 休憩
+        window.takeBreak = async function() {
+            try {
+                const breakTime = new Date();
+                currentStatus = 'break';
+
+                await addDoc(collection(db, 'attendance'), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userEmail: currentUser.email,
+                    type: 'break',
+                    timestamp: breakTime,
+                    location: currentLocation,
+                    status: 'break'
+                });
+
+                updateUI();
+                alert('休憩を記録しました。');
+                
+            } catch (error) {
+                console.error('休憩記録エラー:', error);
+                alert('休憩の記録に失敗しました。');
+            }
+        };
+
+        // 完了
+        window.endWork = async function() {
+            try {
+                const endTime = new Date();
+                currentStatus = 'waiting';
+
+                await addDoc(collection(db, 'attendance'), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    userEmail: currentUser.email,
+                    type: 'end',
+                    timestamp: endTime,
+                    location: currentLocation,
+                    status: 'completed',
+                    workDuration: workStartTime ? Math.round((endTime - workStartTime) / 1000 / 60) : 0
+                });
+
+                // リセット
+                workStartTime = null;
+                currentLocation = null;
+                
+                updateUI();
+                document.getElementById('locationInfo').style.display = 'none';
+                
+                alert('業務完了を記録しました！');
+                
+            } catch (error) {
+                console.error('完了記録エラー:', error);
+                alert('完了の記録に失敗しました。');
+            }
+        };
+
+        // UI更新
+        function updateUI() {
+            const statusCard = document.getElementById('statusCard');
+            const statusText = document.getElementById('statusText');
+            const startWorkBtn = document.getElementById('startWorkBtn');
+            const breakBtn = document.getElementById('breakBtn');
+            const endWorkBtn = document.getElementById('endWorkBtn');
+
+            // ボタンの状態をリセット
+            startWorkBtn.disabled = true;
+            breakBtn.disabled = true;
+            endWorkBtn.disabled = true;
+
+            switch(currentStatus) {
+                case 'waiting':
+                    statusCard.className = 'status-card';
+                    statusText.textContent = '待機中';
+                    if (currentLocation) {
+                        startWorkBtn.disabled = false;
+                    }
+                    break;
+                case 'working':
+                    statusCard.className = 'status-card working';
+                    statusText.textContent = '勤務中';
+                    breakBtn.disabled = false;
+                    endWorkBtn.disabled = false;
+                    break;
+                case 'break':
+                    statusCard.className = 'status-card break';
+                    statusText.textContent = '休憩中';
+                    endWorkBtn.disabled = false;
+                    break;
+            }
+        }
+
+        // 履歴読み込み
+        async function loadHistory() {
+            try {
+                const historyList = document.getElementById('historyList');
+                historyList.innerHTML = '<div class="loading">履歴を読み込み中...</div>';
+
+                const q = query(
+                    collection(db, 'attendance'),
+                    where('userId', '==', currentUser.uid),
+                    orderBy('timestamp', 'desc')
+                );
+
+                const querySnapshot = await getDocs(q);
+                historyList.innerHTML = '';
+
+                if (querySnapshot.empty) {
+                    historyList.innerHTML = '<p style="text-align: center; color: #666;">履歴がありません</p>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const timestamp = data.timestamp.toDate();
+                    
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    
+                    let typeText = '';
+                    switch(data.type) {
+                        case 'start': typeText = '🚀 到着'; break;
+                        case 'break': typeText = '⏸️ 休憩'; break;
+                        case 'end': typeText = '✅ 完了'; break;
+                    }
+                    
+                    historyItem.innerHTML = `
+                        <div class="history-date">${typeText}</div>
+                        <div class="history-time">${timestamp.toLocaleString('ja-JP')}</div>
+                        ${data.workDuration ? `<div class="history-time">作業時間: ${data.workDuration}分</div>` : ''}
+                    `;
+                    
+                    historyList.appendChild(historyItem);
+                });
+
+            } catch (error) {
+                console.error('履歴読み込みエラー:', error);
+                document.getElementById('historyList').innerHTML = 
+                    '<div class="error">履歴の読み込みに失敗しました。</div>';
+            }
+        }
+
+        // ログインボタンのイベントリスナー
+        document.getElementById('loginBtn').addEventListener('click', login);
+
+        console.log('GPS勤怠管理アプリが初期化されました');
+    </script>
+</body>
+</html>

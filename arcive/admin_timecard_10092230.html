@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勤怠管理 - 管理者画面（タイムカード版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .user-info {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #d32f2f;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .filter-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .value {
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .data-table {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .table-header h3 {
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-in {
+            background: #e3f2fd;
+            color: #1976D2;
+        }
+
+        .badge-out {
+            background: #fce4ec;
+            color: #C2185B;
+        }
+
+        .work-hours {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .login-btn {
+            padding: 15px 30px;
+            background: white;
+            color: #333;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .login-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .filter-group {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        読み込み中...
+    </div>
+
+    <div id="loginContainer" class="login-container" style="display: none;">
+        <h2 style="margin-bottom: 20px;">管理者ログイン</h2>
+        <p style="margin-bottom: 20px; color: #666;">管理者権限が必要です</p>
+        <button id="loginBtn" class="login-btn">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" height="20">
+            Googleでログイン
+        </button>
+    </div>
+
+    <div id="appContainer" style="display: none;">
+        <div class="header">
+            <h1>📊 勤怠管理システム（タイムカード版）</h1>
+            <p>全従業員の出退勤記録</p>
+        </div>
+
+        <div class="user-info">
+            <div class="user-info-left">
+                <img id="userPhoto" src="" alt="User Photo">
+                <div>
+                    <div style="font-weight: bold;" id="userName"></div>
+                    <div style="font-size: 14px; color: #666;" id="userEmail"></div>
+                </div>
+            </div>
+            <button id="logoutBtn" class="logout-btn">ログアウト</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="label">総記録数</div>
+                <div class="value" id="totalRecords">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">本日の出勤</div>
+                <div class="value" id="todayClockIn">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">本日の退社</div>
+                <div class="value" id="todayClockOut">0</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h3>🔍 フィルター</h3>
+            <div class="filter-group">
+                <div>
+                    <label>開始日</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div>
+                    <label>終了日</label>
+                    <input type="date" id="endDate">
+                </div>
+                <div>
+                    <label>従業員名</label>
+                    <select id="userFilter">
+                        <option value="">全員</option>
+                    </select>
+                </div>
+                <div>
+                    <label>種別</label>
+                    <select id="typeFilter">
+                        <option value="">全て</option>
+                        <option value="clock_in">出勤のみ</option>
+                        <option value="clock_out">退社のみ</option>
+                    </select>
+                </div>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" id="filterBtn">絞り込み</button>
+                <button class="btn btn-primary" id="resetBtn">リセット</button>
+                <button class="btn btn-success" id="exportBtn">CSV出力</button>
+            </div>
+        </div>
+
+        <div class="data-table">
+            <div class="table-header">
+                <h3>勤怠記録一覧</h3>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>従業員名</th>
+                            <th>種別</th>
+                            <th>時刻</th>
+                            <th>勤務時間</th>
+                            <th>場所</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTable">
+                        <tr>
+                            <td colspan="6" class="no-data">データを読み込み中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, query, orderBy, getDocs, doc, getDoc, where, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds",
+            authDomain: "attendance-app-gps.firebaseapp.com",
+            projectId: "attendance-app-gps",
+            storageBucket: "attendance-app-gps.firebasestorage.app",
+            messagingSenderId: "389712797536",
+            appId: "1:389712797536:web:f872695e0a877fb8900805",
+            measurementId: "G-ELGT30EGBF"
+        };
+
+        // Firebase初期化
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // DOM要素
+        const loadingEl = document.getElementById('loading');
+        const loginContainer = document.getElementById('loginContainer');
+        const appContainer = document.getElementById('appContainer');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userPhoto = document.getElementById('userPhoto');
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+        const recordsTable = document.getElementById('recordsTable');
+        const totalRecordsEl = document.getElementById('totalRecords');
+        const todayClockInEl = document.getElementById('todayClockIn');
+        const todayClockOutEl = document.getElementById('todayClockOut');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const userFilterSelect = document.getElementById('userFilter');
+        const typeFilterSelect = document.getElementById('typeFilter');
+        const filterBtn = document.getElementById('filterBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const exportBtn = document.getElementById('exportBtn');
+
+        let allRecords = [];
+        let filteredRecords = [];
+
+        // 日付をデフォルト設定（本日）
+        const today = new Date();
+        endDateInput.valueAsDate = today;
+        startDateInput.valueAsDate = today;
+
+        // 管理者権限チェック
+        async function checkAdminPermission(uid) {
+            try {
+                const userDoc = await getDoc(doc(db, 'users', uid));
+                if (!userDoc.exists()) {
+                    return false;
+                }
+                const userData = userDoc.data();
+                return userData.role === 'super_admin' || userData.role === 'admin';
+            } catch (error) {
+                console.error('管理者チェックエラー:', error);
+                return false;
+            }
+        }
+
+        // 勤怠記録の取得
+        async function loadRecords() {
+            try {
+                const q = query(
+                    collection(db, 'attendance'),
+                    orderBy('timestamp', 'desc')
+                );
+
+                const querySnapshot = await getDocs(q);
+                allRecords = [];
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    allRecords.push({
+                        id: doc.id,
+                        ...data,
+                        timestamp: data.timestamp?.toDate() || new Date()
+                    });
+                });
+
+                // ユーザーリストを作成
+                const users = [...new Set(allRecords.map(r => r.userName))].sort();
+                userFilterSelect.innerHTML = '<option value="">全員</option>';
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user;
+                    option.textContent = user;
+                    userFilterSelect.appendChild(option);
+                });
+
+                applyFilters();
+                updateStats();
+            } catch (error) {
+                console.error('データ取得エラー:', error);
+                recordsTable.innerHTML = '<tr><td colspan="6" class="error-message">データの取得に失敗しました</td></tr>';
+            }
+        }
+
+        // フィルター適用
+        function applyFilters() {
+            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+            const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+            const userFilter = userFilterSelect.value;
+            const typeFilter = typeFilterSelect.value;
+
+            // 終了日を23:59:59に設定
+            if (endDate) {
+                endDate.setHours(23, 59, 59, 999);
+            }
+
+            filteredRecords = allRecords.filter(record => {
+                // 日付フィルター
+                if (startDate && record.timestamp < startDate) return false;
+                if (endDate && record.timestamp > endDate) return false;
+
+                // ユーザーフィルター
+                if (userFilter && record.userName !== userFilter) return false;
+
+                // 種別フィルター
+                if (typeFilter && record.type !== typeFilter) return false;
+
+                return true;
+            });
+
+            displayRecords();
+        }
+
+        // 勤務時間の計算
+        function calculateWorkHours(records) {
+            const dailyPairs = {};
+
+            // 日付ごとにグループ化
+            records.forEach(record => {
+                const dateKey = record.timestamp.toLocaleDateString('ja-JP');
+                const userKey = `${dateKey}_${record.userName}`;
+
+                if (!dailyPairs[userKey]) {
+                    dailyPairs[userKey] = { clockIn: null, clockOut: null };
+                }
+
+                if (record.type === 'clock_in') {
+                    dailyPairs[userKey].clockIn = record.timestamp;
+                } else if (record.type === 'clock_out') {
+                    dailyPairs[userKey].clockOut = record.timestamp;
+                }
+            });
+
+            // 勤務時間を計算
+            const workHoursMap = {};
+            Object.entries(dailyPairs).forEach(([key, pair]) => {
+                if (pair.clockIn && pair.clockOut) {
+                    const diff = pair.clockOut - pair.clockIn;
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    workHoursMap[key] = `${hours}時間${minutes}分`;
+                }
+            });
+
+            return workHoursMap;
+        }
+
+        // 記録を表示
+        function displayRecords() {
+            if (filteredRecords.length === 0) {
+                recordsTable.innerHTML = '<tr><td colspan="6" class="no-data">記録がありません</td></tr>';
+                return;
+            }
+
+            const workHoursMap = calculateWorkHours(filteredRecords);
+
+            recordsTable.innerHTML = filteredRecords.map(record => {
+                const date = record.timestamp.toLocaleDateString('ja-JP');
+                const time = record.timestamp.toLocaleTimeString('ja-JP', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                const typeLabel = record.type === 'clock_in' ? '出勤' : '退社';
+                const badgeClass = record.type === 'clock_in' ? 'badge-in' : 'badge-out';
+                const icon = record.type === 'clock_in' ? '🏢' : '🏠';
+
+                const userKey = `${date}_${record.userName}`;
+                const workHours = workHoursMap[userKey] || '-';
+
+                return `
+                    <tr>
+                        <td>${date}</td>
+                        <td><strong>${record.userName}</strong></td>
+                        <td><span class="badge ${badgeClass}">${icon} ${typeLabel}</span></td>
+                        <td>${time}</td>
+                        <td><span class="work-hours">${workHours}</span></td>
+                        <td>${record.address || '位置情報なし'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 統計情報の更新
+        function updateStats() {
+            totalRecordsEl.textContent = allRecords.length;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const todayRecords = allRecords.filter(record => {
+                const recordDate = new Date(record.timestamp);
+                recordDate.setHours(0, 0, 0, 0);
+                return recordDate.getTime() === today.getTime();
+            });
+
+            const todayClockIn = todayRecords.filter(r => r.type === 'clock_in').length;
+            const todayClockOut = todayRecords.filter(r => r.type === 'clock_out').length;
+
+            todayClockInEl.textContent = todayClockIn;
+            todayClockOutEl.textContent = todayClockOut;
+        }
+
+        // CSV出力
+        function exportToCSV() {
+            if (filteredRecords.length === 0) {
+                alert('出力するデータがありません');
+                return;
+            }
+
+            const workHoursMap = calculateWorkHours(filteredRecords);
+
+            // CSVヘッダー
+            let csv = '日付,従業員名,種別,時刻,勤務時間,場所\n';
+
+            // CSVデータ
+            filteredRecords.forEach(record => {
+                const date = record.timestamp.toLocaleDateString('ja-JP');
+                const time = record.timestamp.toLocaleTimeString('ja-JP');
+                const type = record.type === 'clock_in' ? '出勤' : '退社';
+                const userKey = `${date}_${record.userName}`;
+                const workHours = workHoursMap[userKey] || '';
+                const address = record.address ? record.address.replace(/,/g, '，') : '';
+
+                csv += `${date},${record.userName},${type},${time},${workHours},"${address}"\n`;
+            });
+
+            // ダウンロード
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `勤怠記録_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // イベントリスナー
+        filterBtn.addEventListener('click', applyFilters);
+
+        resetBtn.addEventListener('click', () => {
+            const today = new Date();
+
+            endDateInput.valueAsDate = today;
+            startDateInput.valueAsDate = today;
+            userFilterSelect.value = '';
+            typeFilterSelect.value = '';
+
+            applyFilters();
+        });
+
+        exportBtn.addEventListener('click', exportToCSV);
+
+        // ログイン
+        loginBtn.addEventListener('click', async () => {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error('ログインエラー:', error);
+                alert('ログインに失敗しました');
+            }
+        });
+
+        // ログアウト
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error('ログアウトエラー:', error);
+                alert('ログアウトに失敗しました');
+            }
+        });
+
+        // 認証状態の監視
+        onAuthStateChanged(auth, async (user) => {
+            loadingEl.style.display = 'none';
+
+            if (user) {
+                // 管理者権限チェック
+                const isAdmin = await checkAdminPermission(user.uid);
+
+                if (!isAdmin) {
+                    alert('管理者権限がありません');
+                    await signOut(auth);
+                    return;
+                }
+
+                // UI更新
+                userPhoto.src = user.photoURL || 'https://via.placeholder.com/50';
+                userName.textContent = user.displayName || 'ユーザー';
+                userEmail.textContent = user.email;
+
+                loginContainer.style.display = 'none';
+                appContainer.style.display = 'block';
+
+                // データ読み込み
+                loadRecords();
+            } else {
+                loginContainer.style.display = 'block';
+                appContainer.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

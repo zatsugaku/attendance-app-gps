@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS勤怠管理アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            display: block;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .status-moving { background: #e8f5e8; color: #2e7d32; }
+        .status-working { background: #e3f2fd; color: #1976d2; }
+
+        .location-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .location-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .location-icon {
+            width: 20px;
+            margin-right: 10px;
+            color: #666;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary { background: #4CAF50; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .history-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #007bff;
+        }
+
+        .history-date {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+
+        .history-details {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            color: #d32f2f;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .login-screen {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .login-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .login-btn:hover {
+            background: #3367d6;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 GPS勤怠管理アプリ</h1>
+        </div>
+
+        <div id="loginScreen" class="status-card login-screen">
+            <h2>ログインが必要です</h2>
+            <p style="margin: 20px 0; color: #666;">Googleアカウントでログインしてください</p>
+            <button id="loginBtn" class="login-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                Googleでログイン
+            </button>
+        </div>
+
+        <div id="mainApp" style="display: none;">
+            <div class="status-card">
+                <div class="user-info">
+                    <img id="userAvatar" class="user-avatar" src="" alt="アバター">
+                    <h3 id="userName">ユーザー名</h3>
+                    <span id="statusIndicator" class="status-indicator status-moving">移動中</span>
+                </div>
+
+                <div class="location-info">
+                    <div class="location-row">
+                        <span class="location-icon">📍</span>
+                        <span id="locationStatus">位置情報を取得中...</span>
+                    </div>
+                    <div class="location-row">
+                        <span class="location-icon">🏠</span>
+                        <span id="addressInfo">住所を取得中...</span>
+                    </div>
+                    <div class="location-row">
+                        <span class="location-icon">📏</span>
+                        <span id="accuracyInfo">精度情報</span>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="startBtn" class="btn btn-primary">開始</button>
+                    <button id="completeBtn" class="btn btn-danger" disabled>完了</button>
+                </div>
+
+                <div class="button-group">
+                    <button id="logoutBtn" class="btn btn-secondary">ログアウト</button>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <h3>📋 勤怠履歴</h3>
+                <div id="historyList">
+                    <div class="loading">履歴を読み込み中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, where, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        // Firebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds",
+            authDomain: "attendance-app-gps.firebaseapp.com",
+            projectId: "attendance-app-gps",
+            storageBucket: "attendance-app-gps.firebasestorage.app",
+            messagingSenderId: "389712797536",
+            appId: "1:389712797536:web:f872695e0a877fb8900805",
+            measurementId: "G-ELGT30EGBF"
+        };
+
+        // Google Geocoding API設定
+        const GOOGLE_API_KEY = 'AIzaSyDw4jTRfCDTidsUfd0ewoDPd908Pg_zk38';
+
+        // Firebase初期化
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // グローバル変数
+        let currentUser = null;
+        let currentStatus = 'moving';
+        let currentLocation = null;
+        let currentAddress = '住所不明';
+
+        // DOM要素
+        const loginScreen = document.getElementById('loginScreen');
+        const mainApp = document.getElementById('mainApp');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userName = document.getElementById('userName');
+        const userAvatar = document.getElementById('userAvatar');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const locationStatus = document.getElementById('locationStatus');
+        const addressInfo = document.getElementById('addressInfo');
+        const accuracyInfo = document.getElementById('accuracyInfo');
+        const startBtn = document.getElementById('startBtn');
+        const completeBtn = document.getElementById('completeBtn');
+        const historyList = document.getElementById('historyList');
+
+        // 認証状態の監視
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                showMainApp();
+                loadUserData();
+                loadUserStatus();
+                startLocationTracking();
+                loadHistory();
+            } else {
+                showLoginScreen();
+            }
+        });
+
+        // ログイン処理
+        loginBtn.addEventListener('click', async () => {
+            try {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error('ログインエラー:', error);
+                alert('ログインに失敗しました: ' + error.message);
+            }
+        });
+
+        // ログアウト処理
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error('ログアウトエラー:', error);
+            }
+        });
+
+        // 画面表示切り替え
+        function showLoginScreen() {
+            loginScreen.style.display = 'block';
+            mainApp.style.display = 'none';
+        }
+
+        function showMainApp() {
+            loginScreen.style.display = 'none';
+            mainApp.style.display = 'block';
+        }
+
+        // ユーザーデータ読み込み
+        function loadUserData() {
+            if (currentUser) {
+                userName.textContent = currentUser.displayName || 'ユーザー';
+                userAvatar.src = currentUser.photoURL || 'https://via.placeholder.com/60';
+            }
+        }
+
+        // ユーザーステータス読み込み
+        async function loadUserStatus() {
+            if (!currentUser) return;
+
+            try {
+                const userDoc = doc(db, 'users', currentUser.uid);
+                const docSnap = await getDoc(userDoc);
+
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    currentStatus = userData.status || 'moving';
+                    updateStatusDisplay(currentStatus);
+                } else {
+                    // 初回ログイン時にユーザードキュメント作成
+                    await setDoc(userDoc, {
+                        userId: currentUser.uid,
+                        userName: currentUser.displayName,
+                        email: currentUser.email,
+                        status: 'moving',
+                        lastUpdated: new Date()
+                    });
+                    currentStatus = 'moving';
+                    updateStatusDisplay('moving');
+                }
+            } catch (error) {
+                console.error('ステータス読み込みエラー:', error);
+                currentStatus = 'moving';
+                updateStatusDisplay('moving');
+            }
+        }
+
+        // ステータス表示更新
+        function updateStatusDisplay(status) {
+            if (status === 'working') {
+                statusIndicator.textContent = '業務中';
+                statusIndicator.className = 'status-indicator status-working';
+                startBtn.disabled = true;
+                completeBtn.disabled = false;
+            } else {
+                statusIndicator.textContent = '移動中';
+                statusIndicator.className = 'status-indicator status-moving';
+                startBtn.disabled = false;
+                completeBtn.disabled = true;
+            }
+        }
+
+        // ステータス保存
+        async function saveUserStatus(status) {
+            if (!currentUser) return;
+
+            try {
+                const userDoc = doc(db, 'users', currentUser.uid);
+                await setDoc(userDoc, {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    email: currentUser.email,
+                    status: status,
+                    lastUpdated: new Date()
+                }, { merge: true });
+                
+                currentStatus = status;
+                updateStatusDisplay(status);
+            } catch (error) {
+                console.error('ステータス保存エラー:', error);
+            }
+        }
+
+        // 位置情報追跡開始
+        function startLocationTracking() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentLocation = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        };
+                        updateLocationDisplay();
+                        getAddressFromCoordinates(currentLocation.latitude, currentLocation.longitude);
+                    },
+                    (error) => {
+                        console.error('位置情報エラー:', error);
+                        locationStatus.textContent = '位置情報の取得に失敗しました';
+                        addressInfo.textContent = '住所の取得に失敗しました';
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            } else {
+                locationStatus.textContent = 'GPS機能がサポートされていません';
+            }
+        }
+
+        // 住所変換機能
+        async function getAddressFromCoordinates(lat, lng) {
+            try {
+                addressInfo.textContent = '住所を取得中...';
+                
+                const response = await fetch(
+                    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}&language=ja`
+                );
+                const data = await response.json();
+                
+                console.log('Geocoding API レスポンス:', data);
+                
+                if (data.status === 'OK' && data.results && data.results.length > 0) {
+                    currentAddress = data.results[0].formatted_address;
+                    addressInfo.textContent = currentAddress;
+                    console.log('住所取得成功:', currentAddress);
+                } else {
+                    console.error('Geocoding API エラー:', data.status, data.error_message);
+                    addressInfo.textContent = `住所取得エラー: ${data.status}`;
+                    if (data.error_message) {
+                        console.error('詳細エラー:', data.error_message);
+                        addressInfo.textContent += ` - ${data.error_message}`;
+                    }
+                }
+            } catch (error) {
+                console.error('住所変換エラー:', error);
+                addressInfo.textContent = 'ネットワークエラー: 住所の取得に失敗しました';
+            }
+        }
+
+        // 位置情報表示更新
+        function updateLocationDisplay() {
+            if (currentLocation) {
+                locationStatus.textContent = `緯度: ${currentLocation.latitude.toFixed(6)}, 経度: ${currentLocation.longitude.toFixed(6)}`;
+                accuracyInfo.textContent = `精度: ${Math.round(currentLocation.accuracy)}m`;
+            }
+        }
+
+        // 打刻処理
+        async function recordAttendance(type) {
+            if (!currentUser || !currentLocation) {
+                alert('ユーザー情報または位置情報が取得できていません');
+                return;
+            }
+
+            try {
+                const now = new Date();
+                const record = {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    type: type,
+                    timestamp: now,
+                    location: currentLocation,
+                    address: currentAddress,
+                    date: now.toISOString().split('T')[0]
+                };
+
+                await addDoc(collection(db, 'attendance'), record);
+                
+                // ステータス更新と保存
+                const newStatus = type === 'start' ? 'working' : 'moving';
+                await saveUserStatus(newStatus);
+                
+                alert(`${getTypeDisplayName(type)}を記録しました\n場所: ${currentAddress}`);
+            } catch (error) {
+                console.error('記録エラー:', error);
+                alert('記録に失敗しました: ' + error.message);
+            }
+        }
+
+        // タイプ表示名取得
+        function getTypeDisplayName(type) {
+            const typeNames = {
+                'start': '業務開始',
+                'complete': '業務完了'
+            };
+            return typeNames[type] || type;
+        }
+
+        // 履歴読み込み
+        function loadHistory() {
+            if (!currentUser) return;
+
+            const q = query(
+                collection(db, 'attendance'),
+                where('userId', '==', currentUser.uid),
+                orderBy('timestamp', 'desc')
+            );
+
+            onSnapshot(q, (querySnapshot) => {
+                const records = [];
+                querySnapshot.forEach((doc) => {
+                    records.push({ id: doc.id, ...doc.data() });
+                });
+                displayHistory(records);
+            });
+        }
+
+        // 履歴表示
+        function displayHistory(records) {
+            if (records.length === 0) {
+                historyList.innerHTML = '<div class="loading">履歴データがありません</div>';
+                return;
+            }
+
+            const groupedRecords = groupRecordsByDate(records);
+            let html = '';
+
+            for (const [date, dateRecords] of Object.entries(groupedRecords)) {
+                html += `<div class="history-item">`;
+                html += `<div class="history-date">${formatDate(date)}</div>`;
+                
+                dateRecords.forEach(record => {
+                    const time = record.timestamp.toDate ? 
+                        record.timestamp.toDate().toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'}) :
+                        new Date(record.timestamp).toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'});
+                    
+                    html += `<div class="history-details">`;
+                    html += `${time} - ${getTypeDisplayName(record.type)}`;
+                    if (record.address) {
+                        html += `<br>📍 ${record.address}`;
+                    }
+                    html += `</div>`;
+                });
+                
+                html += `</div>`;
+            }
+
+            historyList.innerHTML = html;
+        }
+
+        // 日付でグループ化
+        function groupRecordsByDate(records) {
+            const grouped = {};
+            records.forEach(record => {
+                const date = record.timestamp.toDate ? 
+                    record.timestamp.toDate().toISOString().split('T')[0] :
+                    new Date(record.timestamp).toISOString().split('T')[0];
+                
+                if (!grouped[date]) {
+                    grouped[date] = [];
+                }
+                grouped[date].push(record);
+            });
+            return grouped;
+        }
+
+        // 日付フォーマット
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+
+            if (dateString === today.toISOString().split('T')[0]) {
+                return '今日 (' + date.toLocaleDateString('ja-JP', {month: 'short', day: 'numeric'}) + ')';
+            } else if (dateString === yesterday.toISOString().split('T')[0]) {
+                return '昨日 (' + date.toLocaleDateString('ja-JP', {month: 'short', day: 'numeric'}) + ')';
+            } else {
+                return date.toLocaleDateString('ja-JP', {year: 'numeric', month: 'short', day: 'numeric'});
+            }
+        }
+
+        // イベントリスナー
+        startBtn.addEventListener('click', () => recordAttendance('start'));
+        completeBtn.addEventListener('click', () => recordAttendance('complete'));
+    </script>
+</body>
+</html>
