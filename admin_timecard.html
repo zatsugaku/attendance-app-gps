@@ -285,6 +285,85 @@
             padding: 40px;
         }
 
+        /* 編集モーダル用スタイル */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #667eea;
+            font-size: 20px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input[type="time"] {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input[type="time"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
         @media (max-width: 768px) {
             .filter-row {
                 flex-direction: column;
@@ -407,10 +486,45 @@
         </div>
     </div>
 
+    <!-- 編集モーダル -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ 勤怠時刻の編集</h2>
+                <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+
+            <div class="form-group">
+                <label>従業員名</label>
+                <div id="editUserName" style="padding: 10px; background: #f5f5f5; border-radius: 8px; color: #333;"></div>
+            </div>
+
+            <div class="form-group">
+                <label>日付</label>
+                <div id="editDate" style="padding: 10px; background: #f5f5f5; border-radius: 8px; color: #333;"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="editClockInTime">出勤時刻</label>
+                <input type="time" id="editClockInTime" />
+            </div>
+
+            <div class="form-group">
+                <label for="editClockOutTime">退勤時刻</label>
+                <input type="time" id="editClockOutTime" />
+            </div>
+
+            <div class="modal-actions">
+                <button class="button button-secondary" onclick="closeEditModal()">キャンセル</button>
+                <button class="button button-primary" onclick="saveEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, deleteDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, deleteDoc, updateDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds",
@@ -427,6 +541,9 @@
         let allRecords = [];
         let filteredRecords = [];
         let isInitialized = false;
+
+        // 編集用グローバル変数
+        let editingGroup = null;
 
         // ========================================
         // エラー表示関数
@@ -673,12 +790,25 @@
                      (group.clockOut.location ? `${group.clockOut.location.latitude.toFixed(4)}, ${group.clockOut.location.longitude.toFixed(4)}` : '位置情報なし')) :
                     '-';
 
-                const deleteButtons = [];
+                // 操作ボタンの生成
+                const actionButtons = [];
+
+                // 編集ボタン（両方あるときのみ表示）
+                if (group.clockIn || group.clockOut) {
+                    actionButtons.push(`<button class="button button-primary button-small" onclick="openEditModal('${group.clockIn?.id || ''}', '${group.clockOut?.id || ''}', '${group.userName}', '${group.date}')" style="margin-bottom: 5px;">✏️ 編集</button>`);
+                }
+
+                // セット削除ボタン（両方あるときのみ表示）
+                if (group.clockIn && group.clockOut) {
+                    actionButtons.push(`<button class="button button-danger button-small" onclick="deleteBoth('${group.clockIn.id}', '${group.clockOut.id}', '${group.userName}', '${group.date}')" style="margin-bottom: 5px;">🗑️ セット削除</button>`);
+                }
+
+                // 個別削除ボタン
                 if (group.clockIn) {
-                    deleteButtons.push(`<button class="button button-danger button-small" onclick="deleteRecord('${group.clockIn.id}', '${group.userName}', '出勤', '${group.date} ${clockInTime}')" style="margin-bottom: 5px;">出勤削除</button>`);
+                    actionButtons.push(`<button class="button button-danger button-small" onclick="deleteRecord('${group.clockIn.id}', '${group.userName}', '出勤', '${group.date} ${clockInTime}')" style="margin-bottom: 5px;">出勤削除</button>`);
                 }
                 if (group.clockOut) {
-                    deleteButtons.push(`<button class="button button-danger button-small" onclick="deleteRecord('${group.clockOut.id}', '${group.userName}', '退勤', '${group.date} ${clockOutTime}')" >退勤削除</button>`);
+                    actionButtons.push(`<button class="button button-danger button-small" onclick="deleteRecord('${group.clockOut.id}', '${group.userName}', '退勤', '${group.date} ${clockOutTime}')">退勤削除</button>`);
                 }
 
                 return `
@@ -690,8 +820,8 @@
                         <td>${duration}</td>
                         <td style="font-size: 11px;">${clockInLocation}</td>
                         <td style="font-size: 11px;">${clockOutLocation}</td>
-                        <td style="min-width: 80px;">
-                            ${deleteButtons.join('<br>')}
+                        <td style="min-width: 120px;">
+                            ${actionButtons.join('<br>')}
                         </td>
                     </tr>
                 `;
@@ -856,6 +986,121 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        };
+
+        // 編集モーダルを開く
+        window.openEditModal = function(clockInId, clockOutId, userName, date) {
+            editingGroup = {
+                clockInId,
+                clockOutId,
+                userName,
+                date
+            };
+
+            // 既存の時刻を取得
+            const clockInRecord = allRecords.find(r => r.id === clockInId);
+            const clockOutRecord = allRecords.find(r => r.id === clockOutId);
+
+            document.getElementById('editUserName').textContent = userName;
+            document.getElementById('editDate').textContent = date;
+
+            if (clockInRecord) {
+                const time = clockInRecord.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('editClockInTime').value = time;
+            } else {
+                document.getElementById('editClockInTime').value = '';
+            }
+
+            if (clockOutRecord) {
+                const time = clockOutRecord.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('editClockOutTime').value = time;
+            } else {
+                document.getElementById('editClockOutTime').value = '';
+            }
+
+            document.getElementById('editModal').style.display = 'flex';
+        };
+
+        // 編集モーダルを閉じる
+        window.closeEditModal = function() {
+            document.getElementById('editModal').style.display = 'none';
+            editingGroup = null;
+        };
+
+        // 編集を保存
+        window.saveEdit = async function() {
+            if (!editingGroup) return;
+
+            const clockInTime = document.getElementById('editClockInTime').value;
+            const clockOutTime = document.getElementById('editClockOutTime').value;
+
+            if (!clockInTime && !clockOutTime) {
+                alert('出勤時刻または退勤時刻のどちらかを入力してください');
+                return;
+            }
+
+            try {
+                const date = new Date(editingGroup.date);
+
+                // 出勤時刻を更新
+                if (clockInTime && editingGroup.clockInId) {
+                    const [hours, minutes] = clockInTime.split(':');
+                    const newTimestamp = new Date(date);
+                    newTimestamp.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+                    await updateDoc(doc(db, 'attendance', editingGroup.clockInId), {
+                        timestamp: Timestamp.fromDate(newTimestamp)
+                    });
+                }
+
+                // 退勤時刻を更新
+                if (clockOutTime && editingGroup.clockOutId) {
+                    const [hours, minutes] = clockOutTime.split(':');
+                    const newTimestamp = new Date(date);
+                    newTimestamp.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+                    await updateDoc(doc(db, 'attendance', editingGroup.clockOutId), {
+                        timestamp: Timestamp.fromDate(newTimestamp)
+                    });
+                }
+
+                showMessage('✅ 時刻を更新しました', 'success');
+                closeEditModal();
+                await loadAllRecords();
+
+            } catch (error) {
+                console.error('更新エラー:', error);
+                showMessage('❌ 更新に失敗しました: ' + error.message, 'error');
+            }
+        };
+
+        // セット削除（出勤・退勤両方を削除）
+        window.deleteBoth = async function(clockInId, clockOutId, userName, date) {
+            const confirmMessage = `${userName}さんの${date}の勤怠記録（出勤・退勤）を両方削除しますか？\n\nこの操作は取り消せません。`;
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            try {
+                const deletePromises = [];
+
+                if (clockInId) {
+                    deletePromises.push(deleteDoc(doc(db, 'attendance', clockInId)));
+                }
+
+                if (clockOutId) {
+                    deletePromises.push(deleteDoc(doc(db, 'attendance', clockOutId)));
+                }
+
+                await Promise.all(deletePromises);
+                showMessage('✅ 勤怠記録を削除しました', 'success');
+                await loadAllRecords();
+
+            } catch (error) {
+                console.error('削除エラー:', error);
+                showMessage('❌ 削除に失敗しました: ' + error.message, 'error');
+            }
         };
 
         // ログアウト
