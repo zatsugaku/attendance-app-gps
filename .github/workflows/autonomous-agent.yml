@@ -1,0 +1,307 @@
+name: Autonomous Agent Execution
+
+on:
+  issues:
+    types: [opened, labeled, edited]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process'
+        required: true
+        type: number
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Job 1: Check if agent should execute
+  check-trigger:
+    name: Check Agent Trigger
+    runs-on: ubuntu-latest
+    outputs:
+      should_execute: ${{ steps.check.outputs.should_execute }}
+      issue_number: ${{ steps.check.outputs.issue_number }}
+    steps:
+      - name: Check trigger conditions
+        id: check
+        run: |
+          SHOULD_EXECUTE="false"
+          ISSUE_NUMBER=""
+
+          # Check if manually triggered
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SHOULD_EXECUTE="true"
+            ISSUE_NUMBER="${{ github.event.inputs.issue_number }}"
+            echo "Manual trigger for issue #${ISSUE_NUMBER}"
+          fi
+
+          # Check if issue has agent label
+          if [ "${{ github.event_name }}" = "issues" ]; then
+            LABELS='${{ toJson(github.event.issue.labels.*.name) }}'
+            if echo "$LABELS" | grep -q "🤖 agent:coordinator"; then
+              SHOULD_EXECUTE="true"
+              ISSUE_NUMBER="${{ github.event.issue.number }}"
+              echo "Issue #${ISSUE_NUMBER} has coordinator agent label"
+            fi
+          fi
+
+          # Check if comment contains /agent command
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            # Use contains() to avoid path conversion issues
+            if [[ "${{ contains(github.event.comment.body, '/agent') }}" == "true" ]]; then
+              SHOULD_EXECUTE="true"
+              ISSUE_NUMBER="${{ github.event.issue.number }}"
+              echo "Comment triggered agent execution for issue #${ISSUE_NUMBER}"
+            fi
+          fi
+
+          echo "should_execute=${SHOULD_EXECUTE}" >> $GITHUB_OUTPUT
+          echo "issue_number=${ISSUE_NUMBER}" >> $GITHUB_OUTPUT
+
+  # Job 2: Execute Autonomous Agents
+  execute-agents:
+    name: Execute Autonomous Agents
+    runs-on: ubuntu-latest
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_execute == 'true'
+
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Fetch issue details
+        id: issue
+        run: |
+          ISSUE_JSON=$(gh api repos/${{ github.repository }}/issues/${{ needs.check-trigger.outputs.issue_number }})
+          {
+            echo "ISSUE_TITLE<<GITHUB_ENV_EOF"
+            echo "$ISSUE_JSON" | jq -r '.title'
+            echo "GITHUB_ENV_EOF"
+            echo "ISSUE_BODY<<GITHUB_ENV_EOF"
+            echo "$ISSUE_JSON" | jq -r '.body'
+            echo "GITHUB_ENV_EOF"
+          } >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Execute Miyabi Autonomous Agent
+        id: execute
+        run: |
+          echo "🌸 Starting Miyabi Autonomous Agent for Issue #${{ needs.check-trigger.outputs.issue_number }}"
+          node scripts/autonomous-agent.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ needs.check-trigger.outputs.issue_number }}
+          ISSUE_TITLE: ${{ env.ISSUE_TITLE }}
+          ISSUE_BODY: ${{ env.ISSUE_BODY }}
+        continue-on-error: true
+
+      - name: Check for generated code changes
+        id: check_changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "✅ Code changes detected"
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No code changes"
+          fi
+
+      - name: Commit generated code
+        if: steps.check_changes.outputs.has_changes == 'true'
+        id: commit
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          BRANCH_NAME="agent/issue-${{ needs.check-trigger.outputs.issue_number }}-$(date +%s)"
+          git checkout -b "$BRANCH_NAME"
+
+          git add .
+          git commit -m "$(cat <<'EOF'
+          feat: autonomous agent implementation for issue #${{ needs.check-trigger.outputs.issue_number }}
+
+          🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+          Co-Authored-By: Claude <noreply@anthropic.com>
+          EOF
+          )"
+
+          git push origin "$BRANCH_NAME"
+
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.has_changes == 'true'
+        id: create_pr
+        run: |
+          BRANCH_NAME="${{ steps.commit.outputs.branch_name }}"
+
+          PR_BODY=$(cat <<'EOF'
+          ## 🤖 Miyabi Autonomous Agent Execution Report
+
+          **Issue**: #${{ needs.check-trigger.outputs.issue_number }}
+          **Triggered by**: ${{ github.actor }}
+          **Branch**: `$BRANCH_NAME`
+
+          ### Summary
+
+          This PR was automatically generated by the Miyabi Autonomous Operations Agent system.
+
+          ### Agent Execution Flow
+
+          1. ✅ **CoordinatorAgent** - Task analysis and execution plan
+          2. ✅ **CodeGenAgent** - High-quality code generation
+          3. ✅ **ReviewAgent** - Quality check (score ≥80)
+          4. ✅ **PRAgent** - Pull request metadata preparation
+
+          ### Changes
+
+          - Code generated by CodeGenAgent
+          - Quality checked by ReviewAgent
+          - All files committed and pushed
+
+          ### Next Steps
+
+          1. Review the generated code
+          2. Check that functionality works as expected
+          3. Approve or request changes
+          4. Merge when ready
+
+          ### Related Issues
+
+          Closes #${{ needs.check-trigger.outputs.issue_number }}
+
+          ---
+
+          🌸 **Miyabi** - Beauty in Autonomous Development
+
+          🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+          Co-Authored-By: Claude <noreply@anthropic.com>
+          EOF
+          )
+
+          PR_URL=$(gh pr create \
+            --title "[Miyabi] ${{ env.ISSUE_TITLE }}" \
+            --body "$PR_BODY" \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --draft \
+            --label "🤖agent-generated,automated,needs-review")
+
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "✅ Pull Request created: $PR_URL"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload execution logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-execution-logs-${{ needs.check-trigger.outputs.issue_number }}
+          path: |
+            .ai/logs/
+            .ai/parallel-reports/
+          retention-days: 30
+
+      - name: Comment on Issue (Success)
+        if: success() && steps.check_changes.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prUrl = '${{ steps.create_pr.outputs.pr_url }}';
+            github.rest.issues.createComment({
+              issue_number: ${{ needs.check-trigger.outputs.issue_number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ✅ Miyabi Autonomous Agent Execution Complete
+
+            **Status**: Success
+            **Branch**: \`${{ steps.commit.outputs.branch_name }}\`
+            **Pull Request**: ${prUrl}
+
+            ### Agent Execution Flow
+
+            - ✅ **CoordinatorAgent** - Task analysis completed
+            - ✅ **CodeGenAgent** - High-quality code generated
+            - ✅ **ReviewAgent** - Quality check passed (≥80)
+            - ✅ **PRAgent** - PR metadata prepared
+            - ✅ **Workflow** - Draft PR created
+
+            ### Next Steps
+
+            1. Review the generated code in the PR
+            2. Check that functionality works as expected
+            3. Approve or request changes
+            4. Merge when ready
+
+            [View Pull Request →](${prUrl})
+
+            ---
+
+            🌸 Miyabi - Beauty in Autonomous Development`
+            })
+
+      - name: Comment on Issue (Failure)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ needs.check-trigger.outputs.issue_number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ❌ Autonomous Agent Execution Failed
+
+            **Status**: Failed
+            **Run ID**: ${{ github.run_id }}
+
+            ### Error
+
+            The agent execution encountered an error. Please check the logs for details.
+
+            ### Escalation
+
+            This issue has been escalated to @${{ github.repository_owner }} for review.
+
+            [View Logs →](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            ---
+
+            🤖 Autonomous Operations Agent System`
+            })
+
+      - name: Add escalation label on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: ${{ needs.check-trigger.outputs.issue_number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['🚨escalated', '❌agent-failed']
+            })
