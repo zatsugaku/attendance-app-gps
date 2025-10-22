@@ -1292,25 +1292,29 @@
                 console.log('[DEBUG saveEdit] ベース日付:', date);
 
                 // 出勤時刻を更新
-                if (clockInTime && editingGroup.clockInId) {
+                if (clockInTime && editingGroup.clockInId && editingGroup.clockInId !== '') {
                     const [hours, minutes] = clockInTime.split(':');
                     const newTimestamp = new Date(date);
                     newTimestamp.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
+                    console.log('[DEBUG saveEdit] 出勤時刻更新:', editingGroup.clockInId, newTimestamp);
                     await updateDoc(doc(db, 'attendance', editingGroup.clockInId), {
                         timestamp: Timestamp.fromDate(newTimestamp)
                     });
+                    console.log('[DEBUG saveEdit] 出勤時刻更新完了');
                 }
 
                 // 退勤時刻を更新
-                if (clockOutTime && editingGroup.clockOutId) {
+                if (clockOutTime && editingGroup.clockOutId && editingGroup.clockOutId !== '') {
                     const [hours, minutes] = clockOutTime.split(':');
                     const newTimestamp = new Date(date);
                     newTimestamp.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
+                    console.log('[DEBUG saveEdit] 退勤時刻更新:', editingGroup.clockOutId, newTimestamp);
                     await updateDoc(doc(db, 'attendance', editingGroup.clockOutId), {
                         timestamp: Timestamp.fromDate(newTimestamp)
                     });
+                    console.log('[DEBUG saveEdit] 退勤時刻更新完了');
                 }
 
                 showMessage('✅ 時刻を更新しました', 'success');
