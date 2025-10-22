@@ -1,6 +1,7 @@
 {
   "name": "attendance-app",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,5 +12,8 @@
   "description": "",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.67.0"
+  },
+  "devDependencies": {
+    "@octokit/rest": "^21.0.2"
   }
 }
