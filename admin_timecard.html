@@ -1319,7 +1319,7 @@
 
                 showMessage('✅ 時刻を更新しました', 'success');
                 closeEditModal();
-                await loadAllRecords();
+                await filterRecords(); // 現在の表示日付でフィルタリング
 
             } catch (error) {
                 console.error('更新エラー:', error);
