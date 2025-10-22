@@ -540,6 +540,7 @@
         let currentUser = null;
         let allRecords = [];
         let filteredRecords = [];
+        let allEmployees = []; // 全従業員リスト
         let isInitialized = false;
 
         // 編集用グローバル変数
@@ -654,6 +655,37 @@
             }
         }
 
+        // 全従業員を取得
+        async function loadAllEmployees() {
+            try {
+                const usersQuery = query(collection(db, 'users'));
+                const usersSnapshot = await getDocs(usersQuery);
+
+                allEmployees = [];
+                usersSnapshot.forEach((docSnap) => {
+                    const userData = docSnap.data();
+                    allEmployees.push({
+                        uid: docSnap.id,
+                        name: userData.name || '不明',
+                        email: userData.email || '',
+                        employeeNumber: userData.employeeNumber || userData.staffNumber || 999, // 従業員番号
+                        role: userData.role || 'employee'
+                    });
+                });
+
+                // 従業員番号でソート
+                allEmployees.sort((a, b) => {
+                    const numA = parseInt(a.employeeNumber) || 999;
+                    const numB = parseInt(b.employeeNumber) || 999;
+                    return numA - numB;
+                });
+
+                console.log('従業員データ取得完了:', allEmployees.length + '人');
+            } catch (error) {
+                console.error('従業員データ読み込みエラー:', error);
+            }
+        }
+
         // 全記録を取得
         async function loadAllRecords() {
             try {
@@ -682,14 +714,17 @@
                     });
                 });
 
+                // 従業員データを取得
+                await loadAllEmployees();
+
                 updateStats();
                 updateEmployeeFilter();
                 displayRecords(allRecords);
-                
+
             } catch (error) {
                 console.error('記録読み込みエラー:', error);
-                document.getElementById('recordsTableBody').innerHTML = 
-                    '<tr><td colspan="6" style="text-align: center; color: #f44336;">記録の読み込みに失敗しました</td></tr>';
+                document.getElementById('recordsTableBody').innerHTML =
+                    '<tr><td colspan="8" style="text-align: center; color: #f44336;">記録の読み込みに失敗しました</td></tr>';
             }
         }
 
@@ -727,39 +762,56 @@
             });
         }
 
-        // 記録を表示（スタッフごとにグルーピング）
+        // 記録を表示（全従業員表示・従業員番号順）
         function displayRecords(records) {
             const tbody = document.getElementById('recordsTableBody');
 
-            if (records.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #999;">記録がありません</td></tr>';
+            if (allEmployees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #999;">従業員データを読み込み中...</td></tr>';
                 return;
             }
 
-            // スタッフ・日付ごとにグルーピング
-            const grouped = {};
+            // 打刻記録を日付・ユーザーでグルーピング
+            const recordsMap = {};
 
             records.forEach(record => {
                 const timestamp = record.timestamp.toDate();
                 const dateKey = timestamp.toLocaleDateString('ja-JP');
-                const userKey = record.userName || '不明';
-                const key = `${dateKey}_${userKey}`;
+                const userName = record.userName || '不明';
+                const key = `${dateKey}_${userName}`;
 
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        date: dateKey,
-                        userName: userKey,
-                        userId: record.userId,
+                if (!recordsMap[key]) {
+                    recordsMap[key] = {
                         clockIn: null,
                         clockOut: null
                     };
                 }
 
                 if (record.type === 'clock_in') {
-                    grouped[key].clockIn = record;
+                    recordsMap[key].clockIn = record;
                 } else if (record.type === 'clock_out') {
-                    grouped[key].clockOut = record;
+                    recordsMap[key].clockOut = record;
                 }
+            });
+
+            // 表示対象の日付を取得（選択された日付範囲）
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const today = new Date(startDate || new Date()).toLocaleDateString('ja-JP');
+
+            // 全従業員分の行を生成（従業員番号順）
+            const grouped = allEmployees.map(employee => {
+                const key = `${today}_${employee.name}`;
+                const recordData = recordsMap[key] || { clockIn: null, clockOut: null };
+
+                return {
+                    date: today,
+                    userName: employee.name,
+                    userId: employee.uid,
+                    employeeNumber: employee.employeeNumber,
+                    clockIn: recordData.clockIn,
+                    clockOut: recordData.clockOut
+                };
             });
 
             // テーブル行を生成
@@ -912,48 +964,66 @@
             loadAllRecords();
         };
 
-        // CSV出力（新形式: スタッフごとに1行）
+        // CSV出力（全従業員対応・従業員番号順）
         window.exportToCSV = function() {
-            if (allRecords.length === 0) {
-                alert('エクスポートする記録がありません');
+            if (allEmployees.length === 0) {
+                alert('従業員データが読み込まれていません');
                 return;
             }
 
-            // スタッフ・日付ごとにグルーピング
-            const grouped = {};
+            // 打刻記録をマップに変換
+            const recordsMap = {};
 
             allRecords.forEach(record => {
                 const timestamp = record.timestamp.toDate();
                 const dateKey = timestamp.toLocaleDateString('ja-JP');
-                const userKey = record.userName || '不明';
-                const key = `${dateKey}_${userKey}`;
+                const userName = record.userName || '不明';
+                const key = `${dateKey}_${userName}`;
 
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        date: dateKey,
-                        userName: userKey,
+                if (!recordsMap[key]) {
+                    recordsMap[key] = {
                         clockIn: null,
                         clockOut: null
                     };
                 }
 
                 if (record.type === 'clock_in') {
-                    grouped[key].clockIn = record;
+                    recordsMap[key].clockIn = record;
                 } else if (record.type === 'clock_out') {
-                    grouped[key].clockOut = record;
+                    recordsMap[key].clockOut = record;
                 }
             });
 
-            let csv = '日付,従業員名,出勤時刻,退勤時刻,勤務時間,出勤位置,退勤位置\n';
+            // 表示対象の日付を取得
+            const startDate = document.getElementById('startDate').value;
+            const today = new Date(startDate || new Date()).toLocaleDateString('ja-JP');
 
-            Object.values(grouped).forEach(group => {
+            // 全従業員分のデータを生成（従業員番号順）
+            const grouped = allEmployees.map(employee => {
+                const key = `${today}_${employee.name}`;
+                const recordData = recordsMap[key] || { clockIn: null, clockOut: null };
+
+                return {
+                    date: today,
+                    userName: employee.name,
+                    employeeNumber: employee.employeeNumber,
+                    clockIn: recordData.clockIn,
+                    clockOut: recordData.clockOut
+                };
+            });
+
+            let csv = '日付,従業員番号,従業員名,出勤時刻,退勤時刻,勤務時間,出勤位置,退勤位置\n';
+
+            grouped.forEach(group => {
                 const clockInTime = group.clockIn ?
                     group.clockIn.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
                     '';
 
-                const clockOutTime = group.clockOut ?
-                    group.clockOut.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
-                    '勤務中';
+                const clockOutTime = group.clockIn ?
+                    (group.clockOut ?
+                        group.clockOut.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
+                        '') :
+                    '';
 
                 let duration = '';
                 if (group.clockIn && group.clockOut) {
@@ -971,7 +1041,7 @@
                     (group.clockOut.address || '位置情報なし') :
                     '';
 
-                csv += `${group.date},${group.userName},${clockInTime},${clockOutTime},${duration},"${clockInLocation}","${clockOutLocation}"\n`;
+                csv += `${group.date},${group.employeeNumber},${group.userName},${clockInTime},${clockOutTime},${duration},"${clockInLocation}","${clockOutLocation}"\n`;
             });
 
             const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
