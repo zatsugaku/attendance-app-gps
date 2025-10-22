@@ -666,7 +666,7 @@
                     const userData = docSnap.data();
                     allEmployees.push({
                         uid: docSnap.id,
-                        name: userData.name || '不明',
+                        name: userData.userName || userData.name || '不明',  // userNameを優先、fallbackでname
                         email: userData.email || '',
                         employeeNumber: userData.employeeNumber || userData.staffNumber || 999, // 従業員番号
                         role: userData.role || 'employee'
@@ -681,7 +681,6 @@
                 });
 
                 console.log('従業員データ取得完了:', allEmployees.length + '人');
-                console.log('従業員リスト:', allEmployees);
             } catch (error) {
                 console.error('従業員データ読み込みエラー:', error);
             }
@@ -714,9 +713,6 @@
                         ...docSnap.data()
                     });
                 });
-
-                console.log('打刻記録取得完了:', allRecords.length + '件');
-                console.log('打刻記録サンプル:', allRecords.slice(0, 2));
 
                 // 従業員データを取得
                 await loadAllEmployees();
@@ -784,13 +780,6 @@
                 const userName = record.userName || '不明';
                 const key = `${dateKey}_${userName}`;
 
-                console.log('打刻記録処理:', {
-                    userName: record.userName,
-                    type: record.type,
-                    date: dateKey,
-                    key: key
-                });
-
                 if (!recordsMap[key]) {
                     recordsMap[key] = {
                         clockIn: null,
@@ -804,8 +793,6 @@
                     recordsMap[key].clockOut = record;
                 }
             });
-
-            console.log('recordsMap:', recordsMap);
 
             // 表示対象の日付を取得（選択された日付範囲）
             const startDate = document.getElementById('startDate').value;
