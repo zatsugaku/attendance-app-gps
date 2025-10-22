@@ -706,13 +706,22 @@
         async function loadAllRecords() {
             try {
                 const today = new Date();
+                console.log('[DEBUG] 現在の日付オブジェクト:', today);
+                console.log('[DEBUG] タイムゾーン:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+
                 today.setHours(0, 0, 0, 0);
                 const tomorrow = new Date(today);
                 tomorrow.setDate(tomorrow.getDate() + 1);
 
-                // 表示日付フィールドに今日の日付を設定（YYYY-MM-DD形式）
-                const todayStr = today.toISOString().split('T')[0];
+                // 表示日付フィールドに今日の日付を設定（ローカルタイムゾーン）
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`;
+
+                console.log('[DEBUG] 設定する日付文字列:', todayStr);
                 document.getElementById('displayDate').value = todayStr;
+                console.log('[DEBUG] 設定後の値:', document.getElementById('displayDate').value);
 
                 const q = query(
                     collection(db, 'attendance'),
@@ -987,7 +996,12 @@
         // 今日に戻る
         window.goToToday = function() {
             const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            console.log('[DEBUG goToToday] 今日の日付:', todayStr);
             document.getElementById('displayDate').value = todayStr;
             document.getElementById('employeeFilter').value = '';
             filterRecords();
