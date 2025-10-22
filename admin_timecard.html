@@ -820,9 +820,16 @@
                     group.clockIn.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
                     '-';
 
-                const clockOutTime = group.clockOut ?
-                    group.clockOut.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
-                    '<span style="color: #667eea; font-weight: bold;">勤務中</span>';
+                // 退勤時刻の表示ロジック
+                let clockOutTime = '-';
+                if (group.clockIn && !group.clockOut) {
+                    // 出勤あり・退勤なし → 勤務中
+                    clockOutTime = '<span style="color: #667eea; font-weight: bold;">勤務中</span>';
+                } else if (group.clockOut) {
+                    // 退勤あり
+                    clockOutTime = group.clockOut.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+                }
+                // 出勤なし・退勤なし → '-' (デフォルト値)
 
                 let duration = '-';
                 if (group.clockIn && group.clockOut) {
