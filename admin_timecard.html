@@ -710,8 +710,9 @@
                 const tomorrow = new Date(today);
                 tomorrow.setDate(tomorrow.getDate() + 1);
 
-                // 表示日付フィールドに今日の日付を設定
-                document.getElementById('displayDate').valueAsDate = today;
+                // 表示日付フィールドに今日の日付を設定（YYYY-MM-DD形式）
+                const todayStr = today.toISOString().split('T')[0];
+                document.getElementById('displayDate').value = todayStr;
 
                 const q = query(
                     collection(db, 'attendance'),
@@ -974,17 +975,20 @@
         // 日付を変更（前日/翌日）
         window.changeDate = function(days) {
             const displayDateInput = document.getElementById('displayDate');
-            const currentDate = displayDateInput.valueAsDate || new Date();
-            const newDate = new Date(currentDate);
-            newDate.setDate(newDate.getDate() + days);
-            displayDateInput.valueAsDate = newDate;
+            const currentValue = displayDateInput.value;
+            if (!currentValue) return;
+
+            const currentDate = new Date(currentValue + 'T00:00:00');
+            currentDate.setDate(currentDate.getDate() + days);
+            displayDateInput.value = currentDate.toISOString().split('T')[0];
             filterRecords();
         };
 
         // 今日に戻る
         window.goToToday = function() {
             const today = new Date();
-            document.getElementById('displayDate').valueAsDate = today;
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('displayDate').value = todayStr;
             document.getElementById('employeeFilter').value = '';
             filterRecords();
         };
@@ -995,8 +999,8 @@
             const oneWeekAgo = new Date(today);
             oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-            document.getElementById('csvStartDate').valueAsDate = oneWeekAgo;
-            document.getElementById('csvEndDate').valueAsDate = today;
+            document.getElementById('csvStartDate').value = oneWeekAgo.toISOString().split('T')[0];
+            document.getElementById('csvEndDate').value = today.toISOString().split('T')[0];
             document.getElementById('csvModal').style.display = 'flex';
         };
 
