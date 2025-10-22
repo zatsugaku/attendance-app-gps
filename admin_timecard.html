@@ -776,7 +776,7 @@
 
             records.forEach(record => {
                 const timestamp = record.timestamp.toDate();
-                const dateKey = timestamp.toLocaleDateString('ja-JP');
+                const dateKey = `${timestamp.getFullYear()}/${timestamp.getMonth() + 1}/${timestamp.getDate()}`;
                 const userName = record.userName || '不明';
                 const key = `${dateKey}_${userName}`;
 
@@ -797,7 +797,8 @@
             // 表示対象の日付を取得（選択された日付範囲）
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
-            const today = new Date(startDate || new Date()).toLocaleDateString('ja-JP');
+            const todayDate = startDate ? new Date(startDate) : new Date();
+            const today = `${todayDate.getFullYear()}/${todayDate.getMonth() + 1}/${todayDate.getDate()}`;
 
             // 全従業員分の行を生成（従業員番号順）
             const grouped = allEmployees.map(employee => {
@@ -983,7 +984,7 @@
 
             allRecords.forEach(record => {
                 const timestamp = record.timestamp.toDate();
-                const dateKey = timestamp.toLocaleDateString('ja-JP');
+                const dateKey = `${timestamp.getFullYear()}/${timestamp.getMonth() + 1}/${timestamp.getDate()}`;
                 const userName = record.userName || '不明';
                 const key = `${dateKey}_${userName}`;
 
@@ -1003,7 +1004,8 @@
 
             // 表示対象の日付を取得
             const startDate = document.getElementById('startDate').value;
-            const today = new Date(startDate || new Date()).toLocaleDateString('ja-JP');
+            const todayDate = startDate ? new Date(startDate) : new Date();
+            const today = `${todayDate.getFullYear()}/${todayDate.getMonth() + 1}/${todayDate.getDate()}`;
 
             // 全従業員分のデータを生成（従業員番号順）
             const grouped = allEmployees.map(employee => {
