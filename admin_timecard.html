@@ -417,10 +417,11 @@
 
                 <div class="filter-section">
                     <div class="filter-row">
-                        <label>日付範囲:</label>
-                        <input type="date" id="startDate">
-                        <span>〜</span>
-                        <input type="date" id="endDate">
+                        <label>表示日付:</label>
+                        <button class="button button-secondary button-small" onclick="changeDate(-1)">◀ 前日</button>
+                        <input type="date" id="displayDate">
+                        <button class="button button-secondary button-small" onclick="changeDate(1)">翌日 ▶</button>
+                        <button class="button button-secondary button-small" onclick="goToToday()">今日</button>
                     </div>
 
                     <div class="filter-row">
@@ -431,18 +432,8 @@
                     </div>
 
                     <div class="filter-row">
-                        <label>種別:</label>
-                        <select id="typeFilter">
-                            <option value="">全て</option>
-                            <option value="clock_in">出勤</option>
-                            <option value="clock_out">退社</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-row">
-                        <button class="button button-primary" onclick="filterRecords()">絞り込み</button>
-                        <button class="button button-secondary" onclick="resetFilters()">リセット</button>
-                        <button class="button button-secondary" onclick="exportToCSV()">CSV出力</button>
+                        <button class="button button-primary" onclick="filterRecords()">更新</button>
+                        <button class="button button-secondary" onclick="openCSVModal()">📊 CSV一括出力</button>
                     </div>
                 </div>
 
@@ -517,6 +508,31 @@
             <div class="modal-actions">
                 <button class="button button-secondary" onclick="closeEditModal()">キャンセル</button>
                 <button class="button button-primary" onclick="saveEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSV出力モーダル -->
+    <div id="csvModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📊 CSV一括出力</h2>
+                <button class="modal-close" onclick="closeCSVModal()">×</button>
+            </div>
+
+            <div class="form-group">
+                <label for="csvStartDate">開始日</label>
+                <input type="date" id="csvStartDate" />
+            </div>
+
+            <div class="form-group">
+                <label for="csvEndDate">終了日</label>
+                <input type="date" id="csvEndDate" />
+            </div>
+
+            <div class="modal-actions">
+                <button class="button button-secondary" onclick="closeCSVModal()">キャンセル</button>
+                <button class="button button-primary" onclick="exportCSVRange()">CSV出力</button>
             </div>
         </div>
     </div>
@@ -694,8 +710,8 @@
                 const tomorrow = new Date(today);
                 tomorrow.setDate(tomorrow.getDate() + 1);
 
-                document.getElementById('startDate').valueAsDate = today;
-                document.getElementById('endDate').valueAsDate = today;
+                // 表示日付フィールドに今日の日付を設定
+                document.getElementById('displayDate').valueAsDate = today;
 
                 const q = query(
                     collection(db, 'attendance'),
@@ -705,7 +721,7 @@
                 );
 
                 const querySnapshot = await getDocs(q);
-                
+
                 allRecords = [];
                 querySnapshot.forEach((docSnap) => {
                     allRecords.push({
@@ -794,10 +810,9 @@
                 }
             });
 
-            // 表示対象の日付を取得（選択された日付範囲）
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            const todayDate = startDate ? new Date(startDate) : new Date();
+            // 表示対象の日付を取得（選択された日付）
+            const displayDateValue = document.getElementById('displayDate').value;
+            const todayDate = displayDateValue ? new Date(displayDateValue) : new Date();
             const today = `${todayDate.getFullYear()}/${todayDate.getMonth() + 1}/${todayDate.getDate()}`;
 
             // 全従業員分の行を生成（従業員番号順）
@@ -908,28 +923,26 @@
             }
         };
 
-        // 絞り込み
+        // 記録を更新（指定日付のデータを取得）
         window.filterRecords = async function() {
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
+            const displayDateValue = document.getElementById('displayDate').value;
             const employeeFilter = document.getElementById('employeeFilter').value;
-            const typeFilter = document.getElementById('typeFilter').value;
 
-            if (!startDate || !endDate) {
-                alert('開始日と終了日を選択してください');
+            if (!displayDateValue) {
+                alert('表示日付を選択してください');
                 return;
             }
 
             try {
-                const start = new Date(startDate);
-                start.setHours(0, 0, 0, 0);
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
+                const displayDate = new Date(displayDateValue);
+                displayDate.setHours(0, 0, 0, 0);
+                const nextDay = new Date(displayDate);
+                nextDay.setDate(nextDay.getDate() + 1);
 
                 const q = query(
                     collection(db, 'attendance'),
-                    where('timestamp', '>=', Timestamp.fromDate(start)),
-                    where('timestamp', '<=', Timestamp.fromDate(end)),
+                    where('timestamp', '>=', Timestamp.fromDate(displayDate)),
+                    where('timestamp', '<', Timestamp.fromDate(nextDay)),
                     orderBy('timestamp', 'desc')
                 );
 
@@ -943,13 +956,9 @@
                 });
 
                 let filtered = allRecords;
-                
+
                 if (employeeFilter) {
                     filtered = filtered.filter(r => r.userName === employeeFilter);
-                }
-                
-                if (typeFilter) {
-                    filtered = filtered.filter(r => r.type === typeFilter);
                 }
 
                 updateStats();
@@ -957,22 +966,148 @@
                 displayRecords(filtered);
 
             } catch (error) {
-                console.error('絞り込みエラー:', error);
-                showMessage('❌ 絞り込みに失敗しました', 'error');
+                console.error('記録更新エラー:', error);
+                showMessage('❌ 記録の更新に失敗しました', 'error');
             }
         };
 
-        // フィルターをリセット
-        window.resetFilters = function() {
-            const today = new Date();
-            document.getElementById('startDate').valueAsDate = today;
-            document.getElementById('endDate').valueAsDate = today;
-            document.getElementById('employeeFilter').value = '';
-            document.getElementById('typeFilter').value = '';
-            loadAllRecords();
+        // 日付を変更（前日/翌日）
+        window.changeDate = function(days) {
+            const displayDateInput = document.getElementById('displayDate');
+            const currentDate = displayDateInput.valueAsDate || new Date();
+            const newDate = new Date(currentDate);
+            newDate.setDate(newDate.getDate() + days);
+            displayDateInput.valueAsDate = newDate;
+            filterRecords();
         };
 
-        // CSV出力（全従業員対応・従業員番号順）
+        // 今日に戻る
+        window.goToToday = function() {
+            const today = new Date();
+            document.getElementById('displayDate').valueAsDate = today;
+            document.getElementById('employeeFilter').value = '';
+            filterRecords();
+        };
+
+        // CSVモーダルを開く
+        window.openCSVModal = function() {
+            const today = new Date();
+            const oneWeekAgo = new Date(today);
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+            document.getElementById('csvStartDate').valueAsDate = oneWeekAgo;
+            document.getElementById('csvEndDate').valueAsDate = today;
+            document.getElementById('csvModal').style.display = 'flex';
+        };
+
+        // CSVモーダルを閉じる
+        window.closeCSVModal = function() {
+            document.getElementById('csvModal').style.display = 'none';
+        };
+
+        // CSV一括出力（日付範囲指定）
+        window.exportCSVRange = async function() {
+            const startDateValue = document.getElementById('csvStartDate').value;
+            const endDateValue = document.getElementById('csvEndDate').value;
+
+            if (!startDateValue || !endDateValue) {
+                alert('開始日と終了日を選択してください');
+                return;
+            }
+
+            try {
+                const startDate = new Date(startDateValue);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(endDateValue);
+                endDate.setHours(23, 59, 59, 999);
+
+                // 日付範囲のデータを取得
+                const q = query(
+                    collection(db, 'attendance'),
+                    where('timestamp', '>=', Timestamp.fromDate(startDate)),
+                    where('timestamp', '<=', Timestamp.fromDate(endDate)),
+                    orderBy('timestamp', 'desc')
+                );
+
+                const querySnapshot = await getDocs(q);
+                const rangeRecords = [];
+                querySnapshot.forEach((docSnap) => {
+                    rangeRecords.push({
+                        id: docSnap.id,
+                        ...docSnap.data()
+                    });
+                });
+
+                // 日付ごとにグループ化
+                const dateMap = {};
+                rangeRecords.forEach(record => {
+                    const timestamp = record.timestamp.toDate();
+                    const dateKey = `${timestamp.getFullYear()}/${timestamp.getMonth() + 1}/${timestamp.getDate()}`;
+                    const userName = record.userName || '不明';
+                    const key = `${dateKey}_${userName}`;
+
+                    if (!dateMap[key]) {
+                        dateMap[key] = {
+                            date: dateKey,
+                            userName,
+                            clockIn: null,
+                            clockOut: null
+                        };
+                    }
+
+                    if (record.type === 'clock_in') {
+                        dateMap[key].clockIn = record;
+                    } else if (record.type === 'clock_out') {
+                        dateMap[key].clockOut = record;
+                    }
+                });
+
+                // CSV生成
+                let csv = '日付,従業員名,出勤時刻,退勤時刻,勤務時間\n';
+
+                Object.values(dateMap).forEach(group => {
+                    const clockInTime = group.clockIn ?
+                        group.clockIn.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
+                        '';
+
+                    const clockOutTime = group.clockOut ?
+                        group.clockOut.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
+                        '';
+
+                    let duration = '';
+                    if (group.clockIn && group.clockOut) {
+                        const diff = group.clockOut.timestamp.toDate() - group.clockIn.timestamp.toDate();
+                        const hours = Math.floor(diff / (1000 * 60 * 60));
+                        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        duration = `${hours}時間${minutes}分`;
+                    }
+
+                    csv += `${group.date},${group.userName},${clockInTime},${clockOutTime},${duration}\n`;
+                });
+
+                const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+                const blob = new Blob([bom, csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+
+                link.setAttribute('href', url);
+                link.setAttribute('download', `勤怠記録_${startDateValue}_${endDateValue}.csv`);
+                link.style.visibility = 'hidden';
+
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                closeCSVModal();
+                showMessage('✅ CSVファイルをダウンロードしました', 'success');
+
+            } catch (error) {
+                console.error('CSV出力エラー:', error);
+                showMessage('❌ CSV出力に失敗しました: ' + error.message, 'error');
+            }
+        };
+
+        // CSV出力（現在表示中の日付のみ・全従業員対応・従業員番号順）
         window.exportToCSV = function() {
             if (allEmployees.length === 0) {
                 alert('従業員データが読み込まれていません');
@@ -1003,8 +1138,8 @@
             });
 
             // 表示対象の日付を取得
-            const startDate = document.getElementById('startDate').value;
-            const todayDate = startDate ? new Date(startDate) : new Date();
+            const displayDateValue = document.getElementById('displayDate').value;
+            const todayDate = displayDateValue ? new Date(displayDateValue) : new Date();
             const today = `${todayDate.getFullYear()}/${todayDate.getMonth() + 1}/${todayDate.getDate()}`;
 
             // 全従業員分のデータを生成（従業員番号順）
