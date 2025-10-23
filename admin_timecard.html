@@ -1276,12 +1276,17 @@
 
         // 編集を保存
         window.saveEdit = async function() {
-            if (!editingGroup) return;
+            console.log('[DEBUG saveEdit] 関数開始');
+
+            if (!editingGroup) {
+                console.log('[DEBUG saveEdit] editingGroupがnullのため終了');
+                return;
+            }
 
             const clockInTime = document.getElementById('editClockInTime').value;
             const clockOutTime = document.getElementById('editClockOutTime').value;
 
-            console.log('[DEBUG saveEdit] editingGroup:', editingGroup);
+            console.log('[DEBUG saveEdit] editingGroup:', JSON.stringify(editingGroup));
             console.log('[DEBUG saveEdit] clockInTime:', clockInTime, 'clockOutTime:', clockOutTime);
 
             if (!clockInTime && !clockOutTime) {
@@ -1295,38 +1300,57 @@
                 const date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
                 console.log('[DEBUG saveEdit] ベース日付:', date);
 
+                let updateCount = 0;
+
                 // 出勤時刻を更新
+                console.log('[DEBUG saveEdit] 出勤チェック - clockInTime:', clockInTime, 'clockInId:', editingGroup.clockInId);
                 if (clockInTime && editingGroup.clockInId && editingGroup.clockInId !== '') {
                     const [hours, minutes] = clockInTime.split(':');
                     const newTimestamp = new Date(date);
                     newTimestamp.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-                    console.log('[DEBUG saveEdit] 出勤時刻更新:', editingGroup.clockInId, newTimestamp);
+                    console.log('[DEBUG saveEdit] 出勤時刻更新開始:', editingGroup.clockInId, newTimestamp);
                     await updateDoc(doc(db, 'attendance', editingGroup.clockInId), {
                         timestamp: Timestamp.fromDate(newTimestamp)
                     });
+                    updateCount++;
                     console.log('[DEBUG saveEdit] 出勤時刻更新完了');
+                } else {
+                    console.log('[DEBUG saveEdit] 出勤時刻更新スキップ');
                 }
 
                 // 退勤時刻を更新
+                console.log('[DEBUG saveEdit] 退勤チェック - clockOutTime:', clockOutTime, 'clockOutId:', editingGroup.clockOutId);
                 if (clockOutTime && editingGroup.clockOutId && editingGroup.clockOutId !== '') {
                     const [hours, minutes] = clockOutTime.split(':');
                     const newTimestamp = new Date(date);
                     newTimestamp.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-                    console.log('[DEBUG saveEdit] 退勤時刻更新:', editingGroup.clockOutId, newTimestamp);
+                    console.log('[DEBUG saveEdit] 退勤時刻更新開始:', editingGroup.clockOutId, newTimestamp);
                     await updateDoc(doc(db, 'attendance', editingGroup.clockOutId), {
                         timestamp: Timestamp.fromDate(newTimestamp)
                     });
+                    updateCount++;
                     console.log('[DEBUG saveEdit] 退勤時刻更新完了');
+                } else {
+                    console.log('[DEBUG saveEdit] 退勤時刻更新スキップ');
+                }
+
+                console.log('[DEBUG saveEdit] 更新件数:', updateCount);
+
+                if (updateCount === 0) {
+                    showMessage('⚠️ 更新対象がありませんでした', 'error');
+                    return;
                 }
 
                 showMessage('✅ 時刻を更新しました', 'success');
                 closeEditModal();
+                console.log('[DEBUG saveEdit] filterRecords呼び出し前');
                 await filterRecords(); // 現在の表示日付でフィルタリング
+                console.log('[DEBUG saveEdit] filterRecords呼び出し後');
 
             } catch (error) {
-                console.error('更新エラー:', error);
+                console.error('[DEBUG saveEdit] 更新エラー:', error);
                 showMessage('❌ 更新に失敗しました: ' + error.message, 'error');
             }
         };
