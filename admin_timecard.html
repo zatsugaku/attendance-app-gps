@@ -944,10 +944,14 @@
             }
 
             try {
-                const displayDate = new Date(displayDateValue);
+                // YYYY-MM-DD形式をローカルタイムゾーンで正しくパース
+                const [year, month, day] = displayDateValue.split('-').map(Number);
+                const displayDate = new Date(year, month - 1, day);
                 displayDate.setHours(0, 0, 0, 0);
                 const nextDay = new Date(displayDate);
                 nextDay.setDate(nextDay.getDate() + 1);
+
+                console.log('[DEBUG filterRecords] 検索日付:', displayDate, 'nextDay:', nextDay);
 
                 const q = query(
                     collection(db, 'attendance'),
