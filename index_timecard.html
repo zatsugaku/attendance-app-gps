@@ -362,7 +362,10 @@
             </div>
 
             <div class="location-info">
-                <p class="label">📍 現在地</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <p class="label" style="margin: 0;">📍 現在地</p>
+                    <button id="retryLocationBtn" class="button button-secondary button-small" style="padding: 5px 15px; font-size: 12px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer;">🔄 再取得</button>
+                </div>
                 <p id="currentLocation">位置情報を取得中...</p>
             </div>
 
@@ -429,7 +432,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore, collection, addDoc, doc, getDoc, serverTimestamp, query, where, orderBy, getDocs, Timestamp, setDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         // Firebase設定
@@ -443,14 +446,87 @@
             measurementId: "G-ELGT30EGBF"
         };
 
+        // ストレージ可用性チェック
+        function checkStorageAvailability() {
+            const checks = {
+                localStorage: false,
+                sessionStorage: false,
+                cookiesEnabled: navigator.cookieEnabled
+            };
+
+            try {
+                localStorage.setItem('__test__', '1');
+                localStorage.removeItem('__test__');
+                checks.localStorage = true;
+            } catch (e) {
+                console.warn('localStorage利用不可:', e);
+            }
+
+            try {
+                sessionStorage.setItem('__test__', '1');
+                sessionStorage.removeItem('__test__');
+                checks.sessionStorage = true;
+            } catch (e) {
+                console.warn('sessionStorage利用不可:', e);
+            }
+
+            console.log('ストレージ状態:', checks);
+            return checks;
+        }
+
+        const storageStatus = checkStorageAvailability();
+
         // Firebase初期化
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // 永続化を無効化
-        setPersistence(auth, browserSessionPersistence);
+        // localStorageで永続化（リロード・タブ閉じても維持）
+        if (storageStatus.localStorage) {
+            setPersistence(auth, browserLocalPersistence).catch(error => {
+                console.error('永続化設定エラー:', error);
+                // エラーをFirestoreに記録
+                logErrorToFirestore('persistence_error', error);
+            });
+        } else {
+            console.warn('⚠️ localStorageが利用できません。認証状態が維持されない可能性があります。');
+            alert('ブラウザの設定により、ログイン状態が保存されない可能性があります。\nプライベートモード・シークレットモードでないことを確認してください。');
+        }
+
+        // エラーログをFirestoreに記録
+        async function logErrorToFirestore(errorType, error, additionalInfo = {}) {
+            try {
+                if (!currentUser) return;
+
+                await addDoc(collection(db, 'error_logs'), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email,
+                    errorType: errorType,
+                    errorMessage: error.message || String(error),
+                    errorCode: error.code || null,
+                    additionalInfo: additionalInfo,
+                    userAgent: navigator.userAgent,
+                    timestamp: serverTimestamp(),
+                    storageStatus: storageStatus
+                });
+                console.log('エラーログをFirestoreに記録しました');
+            } catch (logError) {
+                console.error('エラーログの記録に失敗:', logError);
+            }
+        }
+
+        // グローバルエラーハンドラー
+        window.addEventListener('error', (event) => {
+            console.error('グローバルエラー:', event.error);
+            if (currentUser) {
+                logErrorToFirestore('uncaught_error', event.error, {
+                    filename: event.filename,
+                    lineno: event.lineno,
+                    colno: event.colno
+                });
+            }
+        });
 
         // Google Maps API Key（住所変換用）
         const GOOGLE_MAPS_API_KEY = 'AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds';
@@ -606,22 +682,46 @@
             }, 5000);
         }
 
-        // 位置情報取得
-        function getCurrentLocation() {
+        // 位置情報取得（リトライ機能付き）
+        function getCurrentLocation(highAccuracy = true) {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
                     reject(new Error('位置情報がサポートされていません'));
                     return;
                 }
 
+                const options = {
+                    enableHighAccuracy: highAccuracy,
+                    timeout: highAccuracy ? 30000 : 15000, // 高精度: 30秒、通常: 15秒
+                    maximumAge: highAccuracy ? 0 : 60000   // 高精度: キャッシュなし、通常: 1分
+                };
+
                 navigator.geolocation.getCurrentPosition(
                     position => resolve(position),
-                    error => reject(error),
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    }
+                    error => {
+                        console.error('位置情報取得エラー:', {
+                            code: error.code,
+                            message: error.message,
+                            highAccuracy: highAccuracy
+                        });
+
+                        // 高精度モードで失敗した場合、通常モードで再試行
+                        if (highAccuracy && error.code === 3) { // TIMEOUT
+                            console.log('高精度モードでタイムアウト、通常モードで再試行...');
+                            navigator.geolocation.getCurrentPosition(
+                                position => resolve(position),
+                                error => reject(error),
+                                {
+                                    enableHighAccuracy: false,
+                                    timeout: 15000,
+                                    maximumAge: 60000
+                                }
+                            );
+                        } else {
+                            reject(error);
+                        }
+                    },
+                    options
                 );
             });
         }
@@ -654,15 +754,54 @@
                 const lng = position.coords.longitude;
                 const address = await getAddressFromCoordinates(lat, lng);
 
-                currentLocation.textContent = address;
+                currentLocation.innerHTML = `<span style="color: #2e7d32;">✓</span> ${address}`;
+                currentLocation.style.background = '#e8f5e9';
             } catch (error) {
                 console.error('位置情報取得エラー:', error);
-                currentLocation.textContent = '位置情報を取得できません';
+                let errorMsg = '位置情報を取得できません';
+                let tip = '';
+
+                if (error.code === 1) { // PERMISSION_DENIED
+                    errorMsg = '位置情報の許可が必要です';
+                    tip = '<br><small>ブラウザの設定で位置情報を許可してください</small>';
+                } else if (error.code === 2) { // POSITION_UNAVAILABLE
+                    errorMsg = 'GPS信号を受信できません';
+                    tip = '<br><small>WiFi/GPSをオンにしてください</small>';
+                } else if (error.code === 3) { // TIMEOUT
+                    errorMsg = '位置情報の取得がタイムアウトしました';
+                    tip = '<br><small>再読み込みしてください</small>';
+                }
+
+                currentLocation.innerHTML = `<span style="color: #f57c00;">⚠</span> ${errorMsg}${tip}`;
+                currentLocation.style.background = '#fff3e0';
+
+                // エラーでもログインは維持（認証情報をクリアしない）
+                console.log('位置情報エラーですが、ログイン状態は維持します');
+
+                // エラーをFirestoreに記録
+                if (currentUser) {
+                    logErrorToFirestore('location_error', error, {
+                        errorCode: error.code,
+                        errorMessage: error.message
+                    });
+                }
             }
         }
 
         updateLocation();
-        setInterval(updateLocation, 30000);
+        setInterval(updateLocation, 60000); // 1分ごとにリトライ
+
+        // 位置情報の手動再取得ボタン
+        document.getElementById('retryLocationBtn').addEventListener('click', async () => {
+            const retryBtn = document.getElementById('retryLocationBtn');
+            retryBtn.disabled = true;
+            retryBtn.textContent = '取得中...';
+
+            await updateLocation();
+
+            retryBtn.disabled = false;
+            retryBtn.textContent = '🔄 再取得';
+        });
 
         // 本日の打刻記録を取得
         async function loadTodayRecords() {
@@ -979,16 +1118,37 @@
 
         // 出勤記録
         clockInBtn.addEventListener('click', async () => {
-            if (!currentPosition) {
-                showMessage('位置情報を取得中です。少々お待ちください', 'error');
-                return;
-            }
-
             clockInBtn.disabled = true;
 
             try {
-                const lat = currentPosition.coords.latitude;
-                const lng = currentPosition.coords.longitude;
+                // 位置情報取得を試みる
+                let position = currentPosition;
+                if (!position) {
+                    showMessage('📍 位置情報を取得中...', 'success');
+                    try {
+                        position = await getCurrentLocation();
+                        currentPosition = position;
+                    } catch (locError) {
+                        console.error('位置情報取得エラー:', locError);
+                        let errorMsg = '❌ 位置情報を取得できません。';
+
+                        if (locError.code === 1) { // PERMISSION_DENIED
+                            errorMsg += 'ブラウザの設定で位置情報を許可してください。';
+                        } else if (locError.code === 2) { // POSITION_UNAVAILABLE
+                            errorMsg += 'GPS信号を受信できません。WiFi/GPSをオンにしてください。';
+                        } else if (locError.code === 3) { // TIMEOUT
+                            errorMsg += '位置情報の取得がタイムアウトしました。再度お試しください。';
+                        }
+
+                        showMessage(errorMsg, 'error');
+                        clockInBtn.disabled = false;
+                        return;
+                    }
+                }
+
+                // 位置情報が取得できた場合のみ記録
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
                 const address = await getAddressFromCoordinates(lat, lng);
 
                 // ユーザー情報を取得（Firestoreから）
@@ -999,24 +1159,24 @@
                 // Firestoreに保存
                 await addDoc(collection(db, 'attendance'), {
                     userId: currentUser.uid,
-                    userName: displayName,  // FirestoreのuserNameを使用
+                    userName: displayName,
                     email: currentUser.email,
                     type: 'clock_in',
                     timestamp: serverTimestamp(),
                     location: {
                         latitude: lat,
                         longitude: lng,
-                        accuracy: currentPosition.coords.accuracy
+                        accuracy: position.coords.accuracy
                     },
                     address: address
                 });
 
                 showMessage('✅ 出勤を記録しました', 'success');
                 loadTodayRecords();
-                
+
             } catch (error) {
                 console.error('出勤記録エラー:', error);
-                showMessage('出勤記録に失敗しました', 'error');
+                showMessage('❌ 出勤記録に失敗しました: ' + error.message, 'error');
             } finally {
                 clockInBtn.disabled = false;
             }
@@ -1024,16 +1184,37 @@
 
         // 退社記録
         clockOutBtn.addEventListener('click', async () => {
-            if (!currentPosition) {
-                showMessage('位置情報を取得中です。少々お待ちください', 'error');
-                return;
-            }
-
             clockOutBtn.disabled = true;
 
             try {
-                const lat = currentPosition.coords.latitude;
-                const lng = currentPosition.coords.longitude;
+                // 位置情報取得を試みる
+                let position = currentPosition;
+                if (!position) {
+                    showMessage('📍 位置情報を取得中...', 'success');
+                    try {
+                        position = await getCurrentLocation();
+                        currentPosition = position;
+                    } catch (locError) {
+                        console.error('位置情報取得エラー:', locError);
+                        let errorMsg = '❌ 位置情報を取得できません。';
+
+                        if (locError.code === 1) { // PERMISSION_DENIED
+                            errorMsg += 'ブラウザの設定で位置情報を許可してください。';
+                        } else if (locError.code === 2) { // POSITION_UNAVAILABLE
+                            errorMsg += 'GPS信号を受信できません。WiFi/GPSをオンにしてください。';
+                        } else if (locError.code === 3) { // TIMEOUT
+                            errorMsg += '位置情報の取得がタイムアウトしました。再度お試しください。';
+                        }
+
+                        showMessage(errorMsg, 'error');
+                        clockOutBtn.disabled = false;
+                        return;
+                    }
+                }
+
+                // 位置情報が取得できた場合のみ記録
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
                 const address = await getAddressFromCoordinates(lat, lng);
 
                 // ユーザー情報を取得（Firestoreから）
@@ -1044,24 +1225,24 @@
                 // Firestoreに保存
                 await addDoc(collection(db, 'attendance'), {
                     userId: currentUser.uid,
-                    userName: displayName,  // FirestoreのuserNameを使用
+                    userName: displayName,
                     email: currentUser.email,
                     type: 'clock_out',
                     timestamp: serverTimestamp(),
                     location: {
                         latitude: lat,
                         longitude: lng,
-                        accuracy: currentPosition.coords.accuracy
+                        accuracy: position.coords.accuracy
                     },
                     address: address
                 });
 
                 showMessage('✅ 退社を記録しました', 'success');
                 loadTodayRecords();
-                
+
             } catch (error) {
                 console.error('退社記録エラー:', error);
-                showMessage('退社記録に失敗しました', 'error');
+                showMessage('❌ 退社記録に失敗しました: ' + error.message, 'error');
             } finally {
                 clockOutBtn.disabled = false;
             }

@@ -3,466 +3,429 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理者画面 - タイムカード勤怠管理</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            color: #667eea;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .user-info {
-            color: #666;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 36px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .filter-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-        }
-
-        .filter-row {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-
-        .filter-row label {
-            font-weight: 600;
-            color: #333;
-            min-width: 80px;
-        }
-
-        .filter-row input,
-        .filter-row select {
-            padding: 10px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .filter-row input:focus,
-        .filter-row select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .button-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .button-secondary {
-            background: #e0e0e0;
-            color: #666;
-        }
-
-        .button-danger {
-            background: #f5576c;
-            color: white;
-        }
-
-        .button-small {
-            padding: 5px 12px;
-            font-size: 12px;
-        }
-
-        .records-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        .records-table th {
-            background: #667eea;
-            color: white;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 14px;
-            position: sticky;
-            top: 0;
-        }
-
-        .records-table td {
-            padding: 12px;
-            border-bottom: 1px solid #e0e0e0;
-            font-size: 14px;
-            color: #333;
-        }
-
-        .records-table tr:hover {
-            background: #f9f9f9;
-        }
-
-        .type-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            display: inline-block;
-        }
-
-        .type-badge.clock-in {
-            background: #667eea;
-            color: white;
-        }
-
-        .type-badge.clock-out {
-            background: #f5576c;
-            color: white;
-        }
-
-        .duration-badge {
-            background: #e8f5e9;
-            color: #2e7d32;
-            padding: 4px 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            display: inline-block;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: white;
-            font-size: 18px;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .error-container {
-            text-align: center;
-            padding: 40px;
-            color: white;
-        }
-
-        .error-container h2 {
-            color: #f44336;
-            margin-bottom: 20px;
-            font-size: 24px;
-        }
-
-        .error-container p {
-            margin-bottom: 15px;
-            line-height: 1.6;
-        }
-
-        .error-container button {
-            padding: 15px 30px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .error-container button:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-        }
-
-        .message {
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .access-denied {
-            text-align: center;
-            color: white;
-            padding: 40px;
-        }
-
-        /* 編集モーダル用スタイル */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-header h2 {
-            color: #667eea;
-            font-size: 20px;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #999;
-        }
-
-        .modal-close:hover {
-            color: #333;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #333;
-        }
-
-        .form-group input[type="time"] {
-            width: 100%;
-            padding: 10px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .form-group input[type="time"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 30px;
-        }
-
-        @media (max-width: 768px) {
-            .filter-row {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .records-table {
-                font-size: 12px;
-            }
-
-            .records-table th,
-            .records-table td {
-                padding: 8px;
-            }
-        }
-    </style>
+    <title>管理者画面 - オフィスタイムカード</title>
+    <link rel="stylesheet" href="css/admin-styles.css">
 </head>
 <body>
-    <div id="loading" class="loading">
-        <div class="spinner"></div>
-        <p id="loadingMessage">Firebaseに接続中...</p>
-        <p style="font-size: 12px; color: #ddd; margin-top: 10px;">
-            時間がかかる場合はリロードしてください
-        </p>
-    </div>
+    <div id="loading" class="loading">読み込み中...</div>
 
     <div id="app" style="display: none;">
         <div class="container">
             <div class="card">
                 <div class="header">
-                    <h1>👥 管理者画面 - タイムカード</h1>
+                    <h1>👥 管理者画面</h1>
                     <div class="user-info" id="userInfo"></div>
                 </div>
 
                 <div id="messageArea"></div>
 
-                <div class="stats">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalRecords">0</div>
-                        <div class="stat-label">総記録数</div>
+                <!-- タブナビゲーション -->
+                <div class="tab-nav">
+                    <button class="tab-button active" onclick="switchTab('records')">📋 記録一覧</button>
+                    <button class="tab-button" onclick="switchTab('settings')">⚙️ 基本設定</button>
+                    <button class="tab-button" onclick="switchTab('monthly')">📊 月次集計</button>
+                    <button class="tab-button" onclick="switchTab('manual')">✏️ 手動入力</button>
+                </div>
+
+                <!-- タブ1: 記録一覧 -->
+                <div id="tab-records" class="tab-content active">
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalRecords">0</div>
+                            <div class="stat-label">総記録数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="todayClockIn">0</div>
+                            <div class="stat-label">本日の出勤</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="todayClockOut">0</div>
+                            <div class="stat-label">本日の退勤</div>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="todayClockIn">0</div>
-                        <div class="stat-label">本日の出勤</div>
+
+                    <div class="filter-section">
+                        <h3 style="margin-bottom: 20px; color: #333;">🔍 フィルター</h3>
+                        <div class="filter-row">
+                            <label>表示日付:</label>
+                            <button class="button button-secondary button-small" onclick="changeDate(-1)">◀ 前日</button>
+                            <input type="date" id="displayDate">
+                            <button class="button button-secondary button-small" onclick="changeDate(1)">翌日 ▶</button>
+                            <button class="button button-secondary button-small" onclick="goToToday()">今日</button>
+                        </div>
+                        <div class="filter-row">
+                            <label>従業員:</label>
+                            <select id="employeeFilter">
+                                <option value="">全従業員</option>
+                            </select>
+                        </div>
+                        <div class="filter-row">
+                            <label>種別:</label>
+                            <select id="typeFilter">
+                                <option value="">全て</option>
+                                <option value="clock_in">出勤</option>
+                                <option value="clock_out">退勤</option>
+                            </select>
+                        </div>
+                        <div class="filter-row">
+                            <button class="button button-primary" onclick="filterRecords()">更新</button>
+                            <button class="button button-secondary" onclick="exportToCSV()">CSV出力</button>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="todayClockOut">0</div>
-                        <div class="stat-label">本日の退社</div>
+
+                    <h2 style="color: #667eea; margin-bottom: 15px; font-size: 24px;">📋 勤怠記録一覧</h2>
+                    <div class="table-container">
+                        <table class="records-table">
+                            <thead>
+                                <tr>
+                                    <th>日付</th>
+                                    <th>従業員</th>
+                                    <th>出勤時刻</th>
+                                    <th>退勤時刻</th>
+                                    <th>勤務時間</th>
+                                    <th>GPS位置</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordsTableBody">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 50px; color: #999;">
+                                        読み込み中...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div class="filter-section">
-                    <div class="filter-row">
-                        <label>表示日付:</label>
-                        <button class="button button-secondary button-small" onclick="changeDate(-1)">◀ 前日</button>
-                        <input type="date" id="displayDate">
-                        <button class="button button-secondary button-small" onclick="changeDate(1)">翌日 ▶</button>
-                        <button class="button button-secondary button-small" onclick="goToToday()">今日</button>
+                <!-- タブ2: 基本設定 -->
+                <div id="tab-settings" class="tab-content">
+                    <div class="section">
+                        <h3>🏢 会社情報</h3>
+                        <div class="form-group">
+                            <label>会社名</label>
+                            <div class="current-value" id="currentCompanyName">未設定</div>
+                            <input type="text" id="companyName" placeholder="株式会社〇〇">
+                        </div>
+                        <div class="form-group">
+                            <label>締め日</label>
+                            <div class="current-value" id="currentClosingDay">未設定</div>
+                            <select id="closingDay">
+                                <option value="月末">月末</option>
+                                <option value="5">5日</option>
+                                <option value="10">10日</option>
+                                <option value="15">15日</option>
+                                <option value="20">20日</option>
+                                <option value="25">25日</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="filter-row">
-                        <label>従業員:</label>
-                        <select id="employeeFilter">
-                            <option value="">全従業員</option>
-                        </select>
+                    <div class="section">
+                        <h3>⏰ 勤務時間設定</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>始業時刻</label>
+                                <div class="current-value" id="currentStartTime">未設定</div>
+                                <input type="time" id="startTime" value="09:00">
+                            </div>
+                            <div class="form-group">
+                                <label>終業時刻</label>
+                                <div class="current-value" id="currentEndTime">未設定</div>
+                                <input type="time" id="endTime" value="18:00">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>所定労働時間（時間/日）</label>
+                            <div class="current-value" id="currentStandardWorkTime">未設定</div>
+                            <input type="number" id="standardWorkTime" value="8" min="1" max="24" step="0.5">
+                        </div>
                     </div>
 
-                    <div class="filter-row">
-                        <button class="button button-primary" onclick="filterRecords()">更新</button>
-                        <button class="button button-secondary" onclick="openCSVModal()">📊 CSV一括出力</button>
+                    <div class="section">
+                        <h3>📊 残業・遅刻設定</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>残業開始時間（時間）</label>
+                                <div class="current-value" id="currentOvertimeThreshold">未設定</div>
+                                <input type="number" id="overtimeThreshold" value="8" min="1" step="0.5">
+                            </div>
+                            <div class="form-group">
+                                <label>遅刻判定時間（分）</label>
+                                <div class="current-value" id="currentLateThreshold">未設定</div>
+                                <input type="number" id="lateThreshold" value="30" min="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>📅 休日設定</h3>
+                        <div class="form-group">
+                            <label>定休日</label>
+                            <div class="current-value" id="currentWeekends">未設定</div>
+                            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                                <label><input type="checkbox" id="sun" value="0"> 日</label>
+                                <label><input type="checkbox" id="mon" value="1"> 月</label>
+                                <label><input type="checkbox" id="tue" value="2"> 火</label>
+                                <label><input type="checkbox" id="wed" value="3"> 水</label>
+                                <label><input type="checkbox" id="thu" value="4"> 木</label>
+                                <label><input type="checkbox" id="fri" value="5"> 金</label>
+                                <label><input type="checkbox" id="sat" value="6"> 土</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="includeHolidays">
+                                祝日を休日とする
+                            </label>
+                        </div>
+                    </div>
+
+                    <button class="button button-primary" onclick="saveSettings()">💾 設定を保存</button>
+
+                    <!-- 従業員管理セクション -->
+                    <div class="section" style="margin-top: 40px;">
+                        <h3>👥 従業員管理</h3>
+                        <div class="table-container">
+                            <table class="records-table">
+                                <thead>
+                                    <tr>
+                                        <th>従業員名</th>
+                                        <th>メールアドレス</th>
+                                        <th>始業時刻</th>
+                                        <th>終業時刻</th>
+                                        <th>休憩時間</th>
+                                        <th>所定労働時間</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeesTableBody">
+                                    <tr>
+                                        <td colspan="7" style="text-align: center; padding: 30px; color: #999;">
+                                            読み込み中...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <h2 style="color: #667eea; margin-bottom: 15px;">📋 勤怠記録一覧</h2>
-                <div style="overflow-x: auto;">
-                    <table class="records-table">
-                        <thead>
-                            <tr>
-                                <th>日付</th>
-                                <th>従業員</th>
-                                <th>出勤時刻</th>
-                                <th>退勤時刻</th>
-                                <th>勤務時間</th>
-                                <th>出勤位置</th>
-                                <th>退勤位置</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recordsTableBody">
-                            <tr>
-                                <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
-                                    読み込み中...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- タブ3: 月次集計 -->
+                <div id="tab-monthly" class="tab-content">
+                    <div class="section">
+                        <h3>📊 月次集計</h3>
+
+                        <!-- 期間選択タイプ -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>集計タイプ</label>
+                                <select id="periodType" onchange="togglePeriodInput()">
+                                    <option value="monthly">月次（締め日基準）</option>
+                                    <option value="custom">期間指定</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 月次期間選択 -->
+                        <div id="monthlyPeriodSection" class="form-row" style="display: flex;">
+                            <div class="form-group">
+                                <label>対象年月</label>
+                                <div style="display: flex; gap: 10px;">
+                                    <select id="targetYear">
+                                        <option value="2024">2024年</option>
+                                        <option value="2025">2025年</option>
+                                        <option value="2026">2026年</option>
+                                    </select>
+                                    <select id="targetMonth">
+                                        <option value="1">1月</option>
+                                        <option value="2">2月</option>
+                                        <option value="3">3月</option>
+                                        <option value="4">4月</option>
+                                        <option value="5">5月</option>
+                                        <option value="6">6月</option>
+                                        <option value="7">7月</option>
+                                        <option value="8">8月</option>
+                                        <option value="9">9月</option>
+                                        <option value="10">10月</option>
+                                        <option value="11">11月</option>
+                                        <option value="12">12月</option>
+                                    </select>
+                                </div>
+                                <div class="help-text" id="periodDisplay">集計期間: 計算中...</div>
+                            </div>
+                        </div>
+
+                        <!-- カスタム期間選択 -->
+                        <div id="customPeriodSection" class="form-row" style="display: none;">
+                            <div class="form-group">
+                                <label>開始日</label>
+                                <input type="date" id="customStartDate">
+                            </div>
+                            <div class="form-group">
+                                <label>終了日</label>
+                                <input type="date" id="customEndDate">
+                            </div>
+                        </div>
+
+                        <!-- 従業員フィルター -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>従業員選択</label>
+                                <select id="monthlyEmployeeFilter">
+                                    <option value="">全従業員</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="filter-row">
+                            <button class="button button-primary" onclick="calculateMonthlySummaryGlobal()">集計実行</button>
+                            <button class="button button-secondary" onclick="exportMonthlySummaryCSVGlobal()">CSV出力</button>
+                        </div>
+                    </div>
+
+                    <div id="monthlySummaryResults" style="display: none;">
+                        <h2 style="color: #667eea; margin-bottom: 15px; font-size: 24px;">📈 集計結果</h2>
+
+                        <div class="table-container">
+                            <table class="records-table">
+                                <thead>
+                                    <tr>
+                                        <th>従業員名</th>
+                                        <th>出勤日数</th>
+                                        <th>総労働時間</th>
+                                        <th>平均労働時間</th>
+                                        <th>残業時間</th>
+                                        <th>遅刻回数</th>
+                                        <th>早退回数</th>
+                                        <th>欠勤日数</th>
+                                        <th>有給取得</th>
+                                        <th>出勤率</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="monthlySummaryTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
-                <button class="button button-secondary" onclick="logout()" style="width: 100%; margin-top: 20px;">
+                <!-- タブ4: 手動入力 -->
+                <div id="tab-manual" class="tab-content">
+                    <!-- 打刻修正 -->
+                    <div class="section">
+                        <h3>⏰ 打刻の追加・修正</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>従業員選択</label>
+                                <select id="manualEmployeeSelect">
+                                    <option value="">選択してください</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>日付</label>
+                                <input type="date" id="manualDate">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>打刻種別</label>
+                                <select id="manualType">
+                                    <option value="clock_in">出勤</option>
+                                    <option value="clock_out">退勤</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>時刻</label>
+                                <input type="time" id="manualTime">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>理由（任意）</label>
+                            <input type="text" id="manualReason" placeholder="例: 打刻忘れ、時刻修正">
+                            <div class="help-text">※この打刻は「✏️手動」マークが付きます</div>
+                        </div>
+
+                        <button class="button button-primary" onclick="addManualRecord()">✏️ 打刻を追加</button>
+                    </div>
+
+                    <!-- 有給休暇登録 -->
+                    <div class="section">
+                        <h3>🌴 有給休暇の登録</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>従業員選択</label>
+                                <select id="paidLeaveEmployee">
+                                    <option value="">選択してください</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>日付</label>
+                                <input type="date" id="paidLeaveDate">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>休暇タイプ</label>
+                                <select id="paidLeaveType">
+                                    <option value="full_day">全休（1.0日）</option>
+                                    <option value="half_day_am">午前半休（0.5日）</option>
+                                    <option value="half_day_pm">午後半休（0.5日）</option>
+                                    <option value="hourly">時間単位</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="paidLeaveHoursGroup" style="display: none;">
+                                <label>時間数（時間単位の場合）</label>
+                                <input type="number" id="paidLeaveHours" min="0.5" max="8" step="0.5" placeholder="例: 2.0">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>理由（任意）</label>
+                            <input type="text" id="paidLeaveReason" placeholder="例: 私用、通院">
+                        </div>
+
+                        <button class="button button-primary" onclick="addPaidLeave()">🌴 有給休暇を登録</button>
+                    </div>
+
+                    <!-- 欠勤登録 -->
+                    <div class="section">
+                        <h3>🏥 欠勤の登録</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>従業員選択</label>
+                                <select id="absenceEmployee">
+                                    <option value="">選択してください</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>日付</label>
+                                <input type="date" id="absenceDate">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>欠勤理由（任意）</label>
+                            <input type="text" id="absenceReason" placeholder="例: 病欠、忌引">
+                        </div>
+
+                        <button class="button button-primary" onclick="addAbsence()">🏥 欠勤を登録</button>
+                    </div>
+                </div>
+
+                <button class="button button-secondary" onclick="logout()" style="width: 100%; margin-top: 30px;">
                     ログアウト
                 </button>
             </div>
@@ -470,970 +433,222 @@
     </div>
 
     <div id="accessDenied" class="access-denied" style="display: none;">
-        <div class="card" style="max-width: 500px; margin: 0 auto;">
+        <div class="card" style="max-width: 600px; margin: 0 auto;">
             <h2 style="color: #f5576c; margin-bottom: 20px;">アクセス拒否</h2>
-            <p style="margin-bottom: 20px;">管理者権限がありません。</p>
+            <p style="margin-bottom: 25px;">管理者権限がありません。</p>
             <button class="button button-primary" onclick="logout()">ログアウト</button>
         </div>
     </div>
 
-    <!-- 編集モーダル -->
-    <div id="editModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>✏️ 勤怠時刻の編集</h2>
-                <button class="modal-close" onclick="closeEditModal()">×</button>
-            </div>
+    <!-- 従業員編集モーダル -->
+    <div id="employeeEditModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="max-width: 600px; margin: 20px; background: white;">
+            <h2 style="color: #667eea; margin-bottom: 20px; font-size: 24px;">👤 従業員勤務時間設定</h2>
+
+            <div id="employeeEditMessageArea"></div>
 
             <div class="form-group">
                 <label>従業員名</label>
-                <div id="editUserName" style="padding: 10px; background: #f5f5f5; border-radius: 8px; color: #333;"></div>
+                <div class="current-value" id="employeeEditName">-</div>
             </div>
 
             <div class="form-group">
-                <label>日付</label>
-                <div id="editDate" style="padding: 10px; background: #f5f5f5; border-radius: 8px; color: #333;"></div>
+                <label>メールアドレス</label>
+                <div class="current-value" id="employeeEditEmail">-</div>
             </div>
 
-            <div class="form-group">
-                <label for="editClockInTime">出勤時刻</label>
-                <input type="time" id="editClockInTime" />
-            </div>
-
-            <div class="form-group">
-                <label for="editClockOutTime">退勤時刻</label>
-                <input type="time" id="editClockOutTime" />
-            </div>
-
-            <div class="modal-actions">
-                <button class="button button-secondary" onclick="closeEditModal()">キャンセル</button>
-                <button class="button button-primary" onclick="saveEdit()">保存</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- CSV出力モーダル -->
-    <div id="csvModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>📊 CSV一括出力</h2>
-                <button class="modal-close" onclick="closeCSVModal()">×</button>
-            </div>
-
-            <div class="form-group">
-                <label for="csvStartDate">開始日</label>
-                <input type="date" id="csvStartDate" />
-            </div>
-
-            <div class="form-group">
-                <label for="csvEndDate">終了日</label>
-                <input type="date" id="csvEndDate" />
-            </div>
-
-            <div class="modal-actions">
-                <button class="button button-secondary" onclick="closeCSVModal()">キャンセル</button>
-                <button class="button button-primary" onclick="exportCSVRange()">CSV出力</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, deleteDoc, updateDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDUgTnS9eabHA8iyY_WMMIrh0ZdxsAF_Ds",
-            authDomain: "attendance-app-gps.firebaseapp.com",
-            projectId: "attendance-app-gps",
-            storageBucket: "attendance-app-gps.firebasestorage.app",
-            messagingSenderId: "389712797536",
-            appId: "1:389712797536:web:f872695e0a877fb8900805",
-            measurementId: "G-ELGT30EGBF"
-        };
-
-        let app, auth, db;
-        let currentUser = null;
-        let allRecords = [];
-        let filteredRecords = [];
-        let allEmployees = []; // 全従業員リスト
-        let isInitialized = false;
-
-        // 編集用グローバル変数
-        let editingGroup = null;
-
-        // ========================================
-        // エラー表示関数
-        // ========================================
-        function showErrorScreen(title, message, details = '') {
-            document.getElementById('loading').innerHTML = `
-                <div class="error-container">
-                    <h2>⚠️ ${title}</h2>
-                    <p>${message}</p>
-                    ${details ? `<p style="font-size: 12px; color: #ddd; margin-top: 10px;">${details}</p>` : ''}
-                    <button onclick="location.reload()">
-                        🔄 再読み込み
-                    </button>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>始業時刻</label>
+                    <input type="time" id="employeeEditStartTime">
                 </div>
-            `;
-        }
 
-        // ========================================
-        // ネットワーク状態チェック
-        // ========================================
-        if (!navigator.onLine) {
-            showErrorScreen(
-                'オフライン',
-                'インターネットに接続してください',
-                'Wi-Fiまたはモバイルデータ通信を確認してください'
-            );
-        }
+                <div class="form-group">
+                    <label>終業時刻</label>
+                    <input type="time" id="employeeEditEndTime">
+                </div>
+            </div>
 
-        window.addEventListener('online', () => {
-            console.log('✅ オンラインになりました');
-            if (!isInitialized) {
-                location.reload();
-            }
-        });
+            <div class="form-row">
+                <div class="form-group">
+                    <label>休憩時間（分）</label>
+                    <input type="number" id="employeeEditBreakTime" min="0" step="1">
+                </div>
 
-        window.addEventListener('offline', () => {
-            console.log('❌ オフラインです');
-            showMessage('⚠️ インターネット接続を確認してください', 'error');
-        });
+                <div class="form-group">
+                    <label>所定労働時間（時間）</label>
+                    <input type="number" id="employeeEditStandardWorkTime" min="1" max="24" step="0.5">
+                </div>
+            </div>
 
-        // ========================================
-        // タイムアウト処理（10秒）
-        // ========================================
-        const loadingTimeout = setTimeout(() => {
-            if (!isInitialized) {
-                console.error('❌ Firebase初期化タイムアウト');
-                showErrorScreen(
-                    '読み込みエラー',
-                    '接続に時間がかかっています',
-                    'ネットワーク環境を確認して再読み込みしてください'
-                );
-            }
-        }, 10000);
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="button button-primary" onclick="saveEmployeeWorkTime()">✅ 保存</button>
+                <button class="button button-secondary" onclick="closeEmployeeEditModal()">キャンセル</button>
+            </div>
+        </div>
+    </div>
 
-        // ========================================
-        // Firebase初期化
-        // ========================================
-        try {
-            console.log('1. Firebase初期化開始');
-            app = initializeApp(firebaseConfig);
-            console.log('2. Firebase初期化完了');
-            
-            auth = getAuth(app);
-            console.log('3. Auth取得完了');
-            
-            db = getFirestore(app);
-            console.log('4. Firestore取得完了');
-            
-            document.getElementById('loadingMessage').textContent = '認証情報を確認中...';
-            
-        } catch (error) {
-            console.error('❌ Firebase初期化失敗:', error);
-            clearTimeout(loadingTimeout);
-            showErrorScreen(
-                '初期化エラー',
-                'Firebaseに接続できませんでした',
-                error.message
-            );
-        }
+    <!-- 編集モーダル -->
+    <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="max-width: 600px; margin: 20px; background: white;">
+            <h2 style="color: #667eea; margin-bottom: 20px; font-size: 24px;">⏰ 打刻時刻の編集</h2>
 
-        // メッセージ表示
-        function showMessage(message, type = 'success') {
-            const messageArea = document.getElementById('messageArea');
-            messageArea.innerHTML = `<div class="message ${type}">${message}</div>`;
-            setTimeout(() => {
-                messageArea.innerHTML = '';
-            }, 5000);
-        }
+            <div id="editMessageArea"></div>
 
-        // 管理者権限チェック
-        async function checkAdminPermission(uid) {
-            try {
-                const userDocPromise = getDoc(doc(db, 'users', uid));
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout')), 5000)
-                );
-                
-                const userDoc = await Promise.race([userDocPromise, timeoutPromise]);
-                
-                if (!userDoc.exists()) {
-                    return false;
-                }
-                const userData = userDoc.data();
-                return userData.role === 'super_admin' || userData.role === 'admin';
-            } catch (error) {
-                console.error('管理者チェックエラー:', error);
-                return false;
-            }
-        }
+            <div class="form-group">
+                <label>従業員名</label>
+                <div class="current-value" id="editUserName">-</div>
+            </div>
 
-        // 全従業員を取得
-        async function loadAllEmployees() {
-            try {
-                const usersQuery = query(collection(db, 'users'));
-                const usersSnapshot = await getDocs(usersQuery);
+            <div class="form-group">
+                <label>種別</label>
+                <div class="current-value" id="editType">-</div>
+            </div>
 
-                allEmployees = [];
-                usersSnapshot.forEach((docSnap) => {
-                    const userData = docSnap.data();
-                    allEmployees.push({
-                        uid: docSnap.id,
-                        name: userData.userName || userData.name || '不明',  // userNameを優先、fallbackでname
-                        email: userData.email || '',
-                        employeeNumber: userData.employeeNumber || userData.staffNumber || 999, // 従業員番号
-                        role: userData.role || 'employee'
-                    });
-                });
+            <div class="form-group">
+                <label>現在の日時</label>
+                <div class="current-value" id="editCurrentTime">-</div>
+            </div>
 
-                // 従業員番号でソート
-                allEmployees.sort((a, b) => {
-                    const numA = parseInt(a.employeeNumber) || 999;
-                    const numB = parseInt(b.employeeNumber) || 999;
-                    return numA - numB;
-                });
+            <div class="form-row">
+                <div class="form-group">
+                    <label>新しい日付</label>
+                    <input type="date" id="editDate">
+                </div>
 
-                console.log('従業員データ取得完了:', allEmployees.length + '人');
-            } catch (error) {
-                console.error('従業員データ読み込みエラー:', error);
-            }
-        }
+                <div class="form-group">
+                    <label>新しい時刻</label>
+                    <input type="time" id="editTime">
+                </div>
+            </div>
 
-        // 全記録を取得
-        async function loadAllRecords() {
-            try {
-                const today = new Date();
-                console.log('[DEBUG] 現在の日付オブジェクト:', today);
-                console.log('[DEBUG] タイムゾーン:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+            <div class="form-group">
+                <label>変更理由（必須）</label>
+                <input type="text" id="editReason" placeholder="例: 打刻忘れの修正、時刻の誤入力">
+                <div class="help-text">※変更履歴として保存されます</div>
+            </div>
 
-                today.setHours(0, 0, 0, 0);
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
+            <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: space-between;">
+                <button class="button button-danger" onclick="deleteFromEditModal()">🗑️ 削除</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="button button-primary" onclick="saveEdit()">✅ 変更を保存</button>
+                    <button class="button button-secondary" onclick="closeEditModal()">キャンセル</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                // 表示日付フィールドに今日の日付を設定（ローカルタイムゾーン）
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
-                const todayStr = `${year}-${month}-${day}`;
+    <!-- 統合編集モーダル -->
+    <div id="unifiedEditModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="max-width: 700px; margin: 20px; background: white; max-height: 90vh; overflow-y: auto;">
+            <h2 style="color: #667eea; margin-bottom: 20px; font-size: 24px;" id="unifiedEditTitle">📋 打刻編集</h2>
 
-                console.log('[DEBUG] 設定する日付文字列:', todayStr);
-                document.getElementById('displayDate').value = todayStr;
-                console.log('[DEBUG] 設定後の値:', document.getElementById('displayDate').value);
+            <div id="unifiedEditMessageArea"></div>
 
-                const q = query(
-                    collection(db, 'attendance'),
-                    where('timestamp', '>=', Timestamp.fromDate(today)),
-                    where('timestamp', '<', Timestamp.fromDate(tomorrow)),
-                    orderBy('timestamp', 'desc')
-                );
+            <!-- 打刻一覧 -->
+            <div id="unifiedEditRecordsList" style="margin-bottom: 20px;">
+                <!-- JavaScript で動的生成 -->
+            </div>
 
-                const querySnapshot = await getDocs(q);
+            <!-- 新規追加セクション -->
+            <div style="border-top: 2px solid #e0e0e0; padding-top: 20px; margin-top: 20px;">
+                <h3 style="color: #333; font-size: 18px; margin-bottom: 15px;">➕ 新規打刻を追加</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>種別</label>
+                        <select id="unifiedAddType">
+                            <option value="clock_in">出勤</option>
+                            <option value="clock_out">退勤</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>時刻</label>
+                        <input type="time" id="unifiedAddTime">
+                    </div>
+                </div>
+                <button class="button button-primary button-small" onclick="addRecordFromUnifiedModal()">➕ 追加</button>
+            </div>
 
-                allRecords = [];
-                querySnapshot.forEach((docSnap) => {
-                    allRecords.push({
-                        id: docSnap.id,
-                        ...docSnap.data()
-                    });
-                });
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="button button-secondary" onclick="closeUnifiedEditModal()">閉じる</button>
+            </div>
+        </div>
+    </div>
 
-                // 従業員データを取得
-                await loadAllEmployees();
+    <!-- Core modules -->
+    <script type="module" src="js/config.js"></script>
+    <script type="module" src="js/utils.js"></script>
+    <script type="module" src="js/auth.js"></script>
 
-                updateStats();
-                updateEmployeeFilter();
-                displayRecords(allRecords);
+    <!-- Feature modules -->
+    <script type="module" src="js/attendance.js"></script>
+    <script type="module" src="js/manual.js"></script>
+    <script type="module" src="js/monthly.js"></script>
+    <script type="module" src="js/settings.js"></script>
+    <script type="module" src="js/employees.js"></script>
+    <script type="module" src="js/edit.js"></script>
 
-            } catch (error) {
-                console.error('記録読み込みエラー:', error);
-                document.getElementById('recordsTableBody').innerHTML =
-                    '<tr><td colspan="8" style="text-align: center; color: #f44336;">記録の読み込みに失敗しました</td></tr>';
-            }
-        }
+    <!-- Main initialization -->
+    <script type="module">
+        import { initAuth, getCurrentUser } from './js/auth.js';
+        import { initializeAttendanceModule } from './js/attendance.js';
+        import { initializeManualModule } from './js/manual.js';
+        import { initializeMonthlyModule } from './js/monthly.js';
+        import { initializeSettingsModule } from './js/settings.js';
+        import { initializeEmployeesModule } from './js/employees.js';
+        import { settingsManager } from './js/settings.js';
+        import { initializeEditModule } from './js/edit.js';
+        import { db } from './js/config.js';
 
-        // 統計情報を更新
-        function updateStats() {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+        // Initialize authentication
+        initAuth().then(user => {
+            if (user && user.isAdmin) {
+                // Initialize all modules
+                initializeAttendanceModule(db);
+                initializeManualModule();
+                initializeMonthlyModule();
+                initializeSettingsModule();
 
-            const todayRecords = allRecords.filter(record => {
-                const recordDate = record.timestamp?.toDate();
-                return recordDate >= today && recordDate < tomorrow;
-            });
+                // Initialize employees module after settings loaded
+                setTimeout(() => {
+                    const defaultSettings = settingsManager.getSettings();
+                    initializeEmployeesModule(defaultSettings);
+                }, 1000);
 
-            const todayClockIn = todayRecords.filter(r => r.type === 'clock_in').length;
-            const todayClockOut = todayRecords.filter(r => r.type === 'clock_out').length;
-
-            document.getElementById('totalRecords').textContent = allRecords.length;
-            document.getElementById('todayClockIn').textContent = todayClockIn;
-            document.getElementById('todayClockOut').textContent = todayClockOut;
-        }
-
-        // 従業員フィルターを更新
-        function updateEmployeeFilter() {
-            const employeeFilter = document.getElementById('employeeFilter');
-            const employees = [...new Set(allRecords.map(r => r.userName))].sort();
-            
-            employeeFilter.innerHTML = '<option value="">全従業員</option>';
-            employees.forEach(employee => {
-                const option = document.createElement('option');
-                option.value = employee;
-                option.textContent = employee;
-                employeeFilter.appendChild(option);
-            });
-        }
-
-        // 記録を表示（全従業員表示・従業員番号順）
-        function displayRecords(records) {
-            const tbody = document.getElementById('recordsTableBody');
-
-            if (allEmployees.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #999;">従業員データを読み込み中...</td></tr>';
-                return;
-            }
-
-            // 打刻記録を日付・ユーザーでグルーピング
-            const recordsMap = {};
-
-            records.forEach(record => {
-                const timestamp = record.timestamp.toDate();
-                const dateKey = `${timestamp.getFullYear()}/${timestamp.getMonth() + 1}/${timestamp.getDate()}`;
-                const userName = record.userName || '不明';
-                const key = `${dateKey}_${userName}`;
-
-                if (!recordsMap[key]) {
-                    recordsMap[key] = {
-                        clockIn: null,
-                        clockOut: null
-                    };
-                }
-
-                if (record.type === 'clock_in') {
-                    recordsMap[key].clockIn = record;
-                } else if (record.type === 'clock_out') {
-                    recordsMap[key].clockOut = record;
-                }
-            });
-
-            // 表示対象の日付を取得（選択された日付）
-            const displayDateValue = document.getElementById('displayDate').value;
-            const todayDate = displayDateValue ? new Date(displayDateValue) : new Date();
-            const today = `${todayDate.getFullYear()}/${todayDate.getMonth() + 1}/${todayDate.getDate()}`;
-
-            // 全従業員分の行を生成（従業員番号順）
-            const grouped = allEmployees.map(employee => {
-                const key = `${today}_${employee.name}`;
-                const recordData = recordsMap[key] || { clockIn: null, clockOut: null };
-
-                return {
-                    date: today,
-                    userName: employee.name,
-                    userId: employee.uid,
-                    employeeNumber: employee.employeeNumber,
-                    clockIn: recordData.clockIn,
-                    clockOut: recordData.clockOut
+                // Initialize edit module with reload callback
+                const reloadRecords = async (preserveFilters) => {
+                    // This will be called from attendance module
+                    if (window.loadRecords) {
+                        await window.loadRecords(db, preserveFilters);
+                    }
                 };
-            });
+                initializeEditModule(user, reloadRecords);
 
-            // テーブル行を生成
-            const rows = Object.values(grouped).map(group => {
-                const clockInTime = group.clockIn ?
-                    group.clockIn.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
-                    '-';
-
-                // 退勤時刻の表示ロジック
-                let clockOutTime = '-';
-                if (group.clockIn && !group.clockOut) {
-                    // 出勤あり・退勤なし → 勤務中
-                    clockOutTime = '<span style="color: #667eea; font-weight: bold;">勤務中</span>';
-                } else if (group.clockOut) {
-                    // 退勤あり
-                    clockOutTime = group.clockOut.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-                }
-                // 出勤なし・退勤なし → '-' (デフォルト値)
-
-                let duration = '-';
-                if (group.clockIn && group.clockOut) {
-                    const diff = group.clockOut.timestamp.toDate() - group.clockIn.timestamp.toDate();
-                    const hours = Math.floor(diff / (1000 * 60 * 60));
-                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    duration = `<span class="duration-badge">${hours}時間${minutes}分</span>`;
-                }
-
-                const clockInLocation = group.clockIn ?
-                    (group.clockIn.address ||
-                     (group.clockIn.location ? `${group.clockIn.location.latitude.toFixed(4)}, ${group.clockIn.location.longitude.toFixed(4)}` : '位置情報なし')) :
-                    '-';
-
-                const clockOutLocation = group.clockOut ?
-                    (group.clockOut.address ||
-                     (group.clockOut.location ? `${group.clockOut.location.latitude.toFixed(4)}, ${group.clockOut.location.longitude.toFixed(4)}` : '位置情報なし')) :
-                    '-';
-
-                // 操作ボタンの生成
-                const actionButtons = [];
-
-                // 編集ボタン（両方あるときのみ表示）
-                if (group.clockIn || group.clockOut) {
-                    actionButtons.push(`<button class="button button-primary button-small" onclick="openEditModal('${group.clockIn?.id || ''}', '${group.clockOut?.id || ''}', '${group.userName}', '${group.date}')" style="margin-bottom: 5px;">✏️ 編集</button>`);
-                }
-
-                // セット削除ボタン（両方あるときのみ表示）
-                if (group.clockIn && group.clockOut) {
-                    actionButtons.push(`<button class="button button-danger button-small" onclick="deleteBoth('${group.clockIn.id}', '${group.clockOut.id}', '${group.userName}', '${group.date}')" style="margin-bottom: 5px;">🗑️ セット削除</button>`);
-                }
-
-                // 個別削除ボタン
-                if (group.clockIn) {
-                    actionButtons.push(`<button class="button button-danger button-small" onclick="deleteRecord('${group.clockIn.id}', '${group.userName}', '出勤', '${group.date} ${clockInTime}')" style="margin-bottom: 5px;">出勤削除</button>`);
-                }
-                if (group.clockOut) {
-                    actionButtons.push(`<button class="button button-danger button-small" onclick="deleteRecord('${group.clockOut.id}', '${group.userName}', '退勤', '${group.date} ${clockOutTime}')">退勤削除</button>`);
-                }
-
-                return `
-                    <tr>
-                        <td>${group.date}</td>
-                        <td>${group.userName}</td>
-                        <td>${clockInTime}</td>
-                        <td>${clockOutTime}</td>
-                        <td>${duration}</td>
-                        <td style="font-size: 11px;">${clockInLocation}</td>
-                        <td style="font-size: 11px;">${clockOutLocation}</td>
-                        <td style="min-width: 120px;">
-                            ${actionButtons.join('<br>')}
-                        </td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = rows.join('');
-        }
-
-        // 記録を削除
-        window.deleteRecord = async function(recordId, userName, type, datetime) {
-            const confirmMessage = `以下の記録を削除しますか?\n\n従業員: ${userName}\n種別: ${type}\n日時: ${datetime}\n\nこの操作は取り消せません。`;
-            
-            if (!confirm(confirmMessage)) {
-                return;
+                // Set global references for modules that need them
+                window.currentUser = user;
             }
-
-            try {
-                await deleteDoc(doc(db, 'attendance', recordId));
-                showMessage('✅ 記録を削除しました', 'success');
-                await loadAllRecords();
-            } catch (error) {
-                console.error('削除エラー:', error);
-                showMessage('❌ 削除に失敗しました: ' + error.message, 'error');
-            }
-        };
-
-        // 記録を更新（指定日付のデータを取得）
-        window.filterRecords = async function() {
-            const displayDateValue = document.getElementById('displayDate').value;
-            const employeeFilter = document.getElementById('employeeFilter').value;
-
-            if (!displayDateValue) {
-                alert('表示日付を選択してください');
-                return;
-            }
-
-            try {
-                // YYYY-MM-DD形式をローカルタイムゾーンで正しくパース
-                const [year, month, day] = displayDateValue.split('-').map(Number);
-                const displayDate = new Date(year, month - 1, day);
-                displayDate.setHours(0, 0, 0, 0);
-                const nextDay = new Date(displayDate);
-                nextDay.setDate(nextDay.getDate() + 1);
-
-                console.log('[DEBUG filterRecords] 検索日付:', displayDate, 'nextDay:', nextDay);
-
-                const q = query(
-                    collection(db, 'attendance'),
-                    where('timestamp', '>=', Timestamp.fromDate(displayDate)),
-                    where('timestamp', '<', Timestamp.fromDate(nextDay)),
-                    orderBy('timestamp', 'desc')
-                );
-
-                const querySnapshot = await getDocs(q);
-                allRecords = [];
-                querySnapshot.forEach((docSnap) => {
-                    allRecords.push({
-                        id: docSnap.id,
-                        ...docSnap.data()
-                    });
-                });
-
-                let filtered = allRecords;
-
-                if (employeeFilter) {
-                    filtered = filtered.filter(r => r.userName === employeeFilter);
-                }
-
-                updateStats();
-                updateEmployeeFilter();
-                displayRecords(filtered);
-
-            } catch (error) {
-                console.error('記録更新エラー:', error);
-                showMessage('❌ 記録の更新に失敗しました', 'error');
-            }
-        };
-
-        // 日付を変更（前日/翌日）
-        window.changeDate = function(days) {
-            const displayDateInput = document.getElementById('displayDate');
-            const currentValue = displayDateInput.value;
-            if (!currentValue) return;
-
-            console.log('[DEBUG changeDate] 現在の日付:', currentValue, 'days:', days);
-
-            // YYYY-MM-DD形式からDateオブジェクトを作成（ローカルタイムゾーン）
-            const [year, month, day] = currentValue.split('-').map(Number);
-            const currentDate = new Date(year, month - 1, day);
-            currentDate.setDate(currentDate.getDate() + days);
-
-            const newYear = currentDate.getFullYear();
-            const newMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-            const newDay = String(currentDate.getDate()).padStart(2, '0');
-            const newDateStr = `${newYear}-${newMonth}-${newDay}`;
-
-            console.log('[DEBUG changeDate] 新しい日付:', newDateStr);
-            displayDateInput.value = newDateStr;
-            filterRecords();
-        };
-
-        // 今日に戻る
-        window.goToToday = function() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
-
-            console.log('[DEBUG goToToday] 今日の日付:', todayStr);
-            document.getElementById('displayDate').value = todayStr;
-            document.getElementById('employeeFilter').value = '';
-            filterRecords();
-        };
-
-        // CSVモーダルを開く
-        window.openCSVModal = function() {
-            const today = new Date();
-            const oneWeekAgo = new Date(today);
-            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-            document.getElementById('csvStartDate').value = oneWeekAgo.toISOString().split('T')[0];
-            document.getElementById('csvEndDate').value = today.toISOString().split('T')[0];
-            document.getElementById('csvModal').style.display = 'flex';
-        };
-
-        // CSVモーダルを閉じる
-        window.closeCSVModal = function() {
-            document.getElementById('csvModal').style.display = 'none';
-        };
-
-        // CSV一括出力（日付範囲指定）
-        window.exportCSVRange = async function() {
-            const startDateValue = document.getElementById('csvStartDate').value;
-            const endDateValue = document.getElementById('csvEndDate').value;
-
-            if (!startDateValue || !endDateValue) {
-                alert('開始日と終了日を選択してください');
-                return;
-            }
-
-            try {
-                const startDate = new Date(startDateValue);
-                startDate.setHours(0, 0, 0, 0);
-                const endDate = new Date(endDateValue);
-                endDate.setHours(23, 59, 59, 999);
-
-                // 日付範囲のデータを取得
-                const q = query(
-                    collection(db, 'attendance'),
-                    where('timestamp', '>=', Timestamp.fromDate(startDate)),
-                    where('timestamp', '<=', Timestamp.fromDate(endDate)),
-                    orderBy('timestamp', 'desc')
-                );
-
-                const querySnapshot = await getDocs(q);
-                const rangeRecords = [];
-                querySnapshot.forEach((docSnap) => {
-                    rangeRecords.push({
-                        id: docSnap.id,
-                        ...docSnap.data()
-                    });
-                });
-
-                // 日付ごとにグループ化
-                const dateMap = {};
-                rangeRecords.forEach(record => {
-                    const timestamp = record.timestamp.toDate();
-                    const dateKey = `${timestamp.getFullYear()}/${timestamp.getMonth() + 1}/${timestamp.getDate()}`;
-                    const userName = record.userName || '不明';
-                    const key = `${dateKey}_${userName}`;
-
-                    if (!dateMap[key]) {
-                        dateMap[key] = {
-                            date: dateKey,
-                            userName,
-                            clockIn: null,
-                            clockOut: null
-                        };
-                    }
-
-                    if (record.type === 'clock_in') {
-                        dateMap[key].clockIn = record;
-                    } else if (record.type === 'clock_out') {
-                        dateMap[key].clockOut = record;
-                    }
-                });
-
-                // CSV生成
-                let csv = '日付,従業員名,出勤時刻,退勤時刻,勤務時間\n';
-
-                Object.values(dateMap).forEach(group => {
-                    const clockInTime = group.clockIn ?
-                        group.clockIn.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
-                        '';
-
-                    const clockOutTime = group.clockOut ?
-                        group.clockOut.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
-                        '';
-
-                    let duration = '';
-                    if (group.clockIn && group.clockOut) {
-                        const diff = group.clockOut.timestamp.toDate() - group.clockIn.timestamp.toDate();
-                        const hours = Math.floor(diff / (1000 * 60 * 60));
-                        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                        duration = `${hours}時間${minutes}分`;
-                    }
-
-                    csv += `${group.date},${group.userName},${clockInTime},${clockOutTime},${duration}\n`;
-                });
-
-                const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-                const blob = new Blob([bom, csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-
-                link.setAttribute('href', url);
-                link.setAttribute('download', `勤怠記録_${startDateValue}_${endDateValue}.csv`);
-                link.style.visibility = 'hidden';
-
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                closeCSVModal();
-                showMessage('✅ CSVファイルをダウンロードしました', 'success');
-
-            } catch (error) {
-                console.error('CSV出力エラー:', error);
-                showMessage('❌ CSV出力に失敗しました: ' + error.message, 'error');
-            }
-        };
-
-        // CSV出力（現在表示中の日付のみ・全従業員対応・従業員番号順）
-        window.exportToCSV = function() {
-            if (allEmployees.length === 0) {
-                alert('従業員データが読み込まれていません');
-                return;
-            }
-
-            // 打刻記録をマップに変換
-            const recordsMap = {};
-
-            allRecords.forEach(record => {
-                const timestamp = record.timestamp.toDate();
-                const dateKey = `${timestamp.getFullYear()}/${timestamp.getMonth() + 1}/${timestamp.getDate()}`;
-                const userName = record.userName || '不明';
-                const key = `${dateKey}_${userName}`;
-
-                if (!recordsMap[key]) {
-                    recordsMap[key] = {
-                        clockIn: null,
-                        clockOut: null
-                    };
-                }
-
-                if (record.type === 'clock_in') {
-                    recordsMap[key].clockIn = record;
-                } else if (record.type === 'clock_out') {
-                    recordsMap[key].clockOut = record;
-                }
-            });
-
-            // 表示対象の日付を取得
-            const displayDateValue = document.getElementById('displayDate').value;
-            const todayDate = displayDateValue ? new Date(displayDateValue) : new Date();
-            const today = `${todayDate.getFullYear()}/${todayDate.getMonth() + 1}/${todayDate.getDate()}`;
-
-            // 全従業員分のデータを生成（従業員番号順）
-            const grouped = allEmployees.map(employee => {
-                const key = `${today}_${employee.name}`;
-                const recordData = recordsMap[key] || { clockIn: null, clockOut: null };
-
-                return {
-                    date: today,
-                    userName: employee.name,
-                    employeeNumber: employee.employeeNumber,
-                    clockIn: recordData.clockIn,
-                    clockOut: recordData.clockOut
-                };
-            });
-
-            let csv = '日付,従業員番号,従業員名,出勤時刻,退勤時刻,勤務時間,出勤位置,退勤位置\n';
-
-            grouped.forEach(group => {
-                const clockInTime = group.clockIn ?
-                    group.clockIn.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
-                    '';
-
-                const clockOutTime = group.clockIn ?
-                    (group.clockOut ?
-                        group.clockOut.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) :
-                        '') :
-                    '';
-
-                let duration = '';
-                if (group.clockIn && group.clockOut) {
-                    const diff = group.clockOut.timestamp.toDate() - group.clockIn.timestamp.toDate();
-                    const hours = Math.floor(diff / (1000 * 60 * 60));
-                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    duration = `${hours}時間${minutes}分`;
-                }
-
-                const clockInLocation = group.clockIn ?
-                    (group.clockIn.address || '位置情報なし') :
-                    '';
-
-                const clockOutLocation = group.clockOut ?
-                    (group.clockOut.address || '位置情報なし') :
-                    '';
-
-                csv += `${group.date},${group.employeeNumber},${group.userName},${clockInTime},${clockOutTime},${duration},"${clockInLocation}","${clockOutLocation}"\n`;
-            });
-
-            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-            const blob = new Blob([bom, csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-
-            link.setAttribute('href', url);
-            link.setAttribute('download', `タイムカード_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
-
-        // 編集モーダルを開く
-        window.openEditModal = function(clockInId, clockOutId, userName, date) {
-            editingGroup = {
-                clockInId,
-                clockOutId,
-                userName,
-                date
-            };
-
-            // 既存の時刻を取得
-            const clockInRecord = allRecords.find(r => r.id === clockInId);
-            const clockOutRecord = allRecords.find(r => r.id === clockOutId);
-
-            document.getElementById('editUserName').textContent = userName;
-            document.getElementById('editDate').textContent = date;
-
-            if (clockInRecord) {
-                const time = clockInRecord.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-                document.getElementById('editClockInTime').value = time;
-            } else {
-                document.getElementById('editClockInTime').value = '';
-            }
-
-            if (clockOutRecord) {
-                const time = clockOutRecord.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-                document.getElementById('editClockOutTime').value = time;
-            } else {
-                document.getElementById('editClockOutTime').value = '';
-            }
-
-            document.getElementById('editModal').style.display = 'flex';
-        };
-
-        // 編集モーダルを閉じる
-        window.closeEditModal = function() {
-            document.getElementById('editModal').style.display = 'none';
-            editingGroup = null;
-        };
-
-        // 編集を保存
-        window.saveEdit = async function() {
-            console.log('[DEBUG saveEdit] 関数開始');
-
-            if (!editingGroup) {
-                console.log('[DEBUG saveEdit] editingGroupがnullのため終了');
-                return;
-            }
-
-            const clockInTime = document.getElementById('editClockInTime').value;
-            const clockOutTime = document.getElementById('editClockOutTime').value;
-
-            console.log('[DEBUG saveEdit] editingGroup:', JSON.stringify(editingGroup));
-            console.log('[DEBUG saveEdit] clockInTime:', clockInTime, 'clockOutTime:', clockOutTime);
-
-            if (!clockInTime && !clockOutTime) {
-                alert('出勤時刻または退勤時刻のどちらかを入力してください');
-                return;
-            }
-
-            try {
-                // editingGroup.dateは "2025/10/23" 形式なので、パース
-                const dateParts = editingGroup.date.split('/').map(Number);
-                const date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-                console.log('[DEBUG saveEdit] ベース日付:', date);
-
-                let updateCount = 0;
-
-                // 出勤時刻を更新
-                console.log('[DEBUG saveEdit] 出勤チェック - clockInTime:', clockInTime, 'clockInId:', editingGroup.clockInId);
-                if (clockInTime && editingGroup.clockInId && editingGroup.clockInId !== '') {
-                    const [hours, minutes] = clockInTime.split(':');
-                    const newTimestamp = new Date(date);
-                    newTimestamp.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-                    console.log('[DEBUG saveEdit] 出勤時刻更新開始:', editingGroup.clockInId, newTimestamp);
-                    await updateDoc(doc(db, 'attendance', editingGroup.clockInId), {
-                        timestamp: Timestamp.fromDate(newTimestamp)
-                    });
-                    updateCount++;
-                    console.log('[DEBUG saveEdit] 出勤時刻更新完了');
-                } else {
-                    console.log('[DEBUG saveEdit] 出勤時刻更新スキップ');
-                }
-
-                // 退勤時刻を更新
-                console.log('[DEBUG saveEdit] 退勤チェック - clockOutTime:', clockOutTime, 'clockOutId:', editingGroup.clockOutId);
-                if (clockOutTime && editingGroup.clockOutId && editingGroup.clockOutId !== '') {
-                    const [hours, minutes] = clockOutTime.split(':');
-                    const newTimestamp = new Date(date);
-                    newTimestamp.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-                    console.log('[DEBUG saveEdit] 退勤時刻更新開始:', editingGroup.clockOutId, newTimestamp);
-                    await updateDoc(doc(db, 'attendance', editingGroup.clockOutId), {
-                        timestamp: Timestamp.fromDate(newTimestamp)
-                    });
-                    updateCount++;
-                    console.log('[DEBUG saveEdit] 退勤時刻更新完了');
-                } else {
-                    console.log('[DEBUG saveEdit] 退勤時刻更新スキップ');
-                }
-
-                console.log('[DEBUG saveEdit] 更新件数:', updateCount);
-
-                if (updateCount === 0) {
-                    showMessage('⚠️ 更新対象がありませんでした', 'error');
-                    return;
-                }
-
-                showMessage('✅ 時刻を更新しました', 'success');
-                closeEditModal();
-                console.log('[DEBUG saveEdit] filterRecords呼び出し前');
-                await filterRecords(); // 現在の表示日付でフィルタリング
-                console.log('[DEBUG saveEdit] filterRecords呼び出し後');
-
-            } catch (error) {
-                console.error('[DEBUG saveEdit] 更新エラー:', error);
-                showMessage('❌ 更新に失敗しました: ' + error.message, 'error');
-            }
-        };
-
-        // セット削除（出勤・退勤両方を削除）
-        window.deleteBoth = async function(clockInId, clockOutId, userName, date) {
-            const confirmMessage = `${userName}さんの${date}の勤怠記録（出勤・退勤）を両方削除しますか？\n\nこの操作は取り消せません。`;
-
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-
-            try {
-                const deletePromises = [];
-
-                if (clockInId) {
-                    deletePromises.push(deleteDoc(doc(db, 'attendance', clockInId)));
-                }
-
-                if (clockOutId) {
-                    deletePromises.push(deleteDoc(doc(db, 'attendance', clockOutId)));
-                }
-
-                await Promise.all(deletePromises);
-                showMessage('✅ 勤怠記録を削除しました', 'success');
-                await loadAllRecords();
-
-            } catch (error) {
-                console.error('削除エラー:', error);
-                showMessage('❌ 削除に失敗しました: ' + error.message, 'error');
-            }
-        };
-
-        // ログアウト
-        window.logout = async function() {
-            try {
-                await signOut(auth);
-                window.location.href = 'index_timecard.html';
-            } catch (error) {
-                console.error('ログアウトエラー:', error);
-                showMessage('❌ ログアウトに失敗しました', 'error');
-            }
-        };
-
-        // 認証状態の監視
-        onAuthStateChanged(auth, async (user) => {
-            try {
-                console.log('5. onAuthStateChanged呼ばれた', user ? 'ログイン済み' : '未ログイン');
-                
-                clearTimeout(loadingTimeout);
-                isInitialized = true;
-                
-                document.getElementById('loading').style.display = 'none';
-
-                if (user) {
-                    currentUser = user;
-                    document.getElementById('loadingMessage').textContent = '管理者権限を確認中...';
-                    
-                    const isAdmin = await checkAdminPermission(user.uid);
-
-                    if (isAdmin) {
-                        document.getElementById('app').style.display = 'block';
-                        document.getElementById('accessDenied').style.display = 'none';
-                        document.getElementById('userInfo').textContent = `ログイン中: ${user.email}`;
-
-                        await loadAllRecords();
-                    } else {
-                        document.getElementById('app').style.display = 'none';
-                        document.getElementById('accessDenied').style.display = 'block';
-                    }
-                } else {
-                    window.location.href = 'index_timecard.html';
-                }
-            } catch (error) {
-                console.error('❌ 認証エラー:', error);
-                clearTimeout(loadingTimeout);
-                showErrorScreen(
-                    '認証エラー',
-                    '認証処理でエラーが発生しました',
-                    error.message
-                );
-            }
+        }).catch(error => {
+            console.error('Authentication initialization failed:', error);
         });
+
+        // Tab switching function
+        window.switchTab = function(tabName) {
+            const tabs = ['records', 'settings', 'monthly', 'manual'];
+            tabs.forEach(tab => {
+                const tabContent = document.getElementById(`tab-${tab}`);
+                const tabButton = document.querySelector(`[onclick*="switchTab('${tab}')"]`);
+
+                if (tab === tabName) {
+                    tabContent.style.display = 'block';
+                    tabButton.classList.add('active');
+                } else {
+                    tabContent.style.display = 'none';
+                    tabButton.classList.remove('active');
+                }
+            });
+        };
+
+        console.log('🚀 Admin application initialized');
     </script>
 </body>
 </html>
